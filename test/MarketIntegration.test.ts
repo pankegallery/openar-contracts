@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import chai, { expect } from "chai";
 import asPromised from "chai-as-promised";
 import { BigNumber, BigNumberish, Bytes, Wallet } from "ethers";
-import { AddressZero, MaxUint256, WeiPerEther } from "@ethersproject/constants";
+import { AddressZero, MaxUint256 } from "@ethersproject/constants";
 import {
   deployMarket,
   deployMedia,
