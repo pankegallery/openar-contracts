@@ -2,7 +2,7 @@
 // import { ethers } from "hardhat";
 // import chai, { expect } from "chai";
 // import asPromised from "chai-as-promised";
-// import { BigNumber, Wallet } from "ethers";
+// import { BigNumber, Signer } from "ethers";
 // import {
 //   deployMarket,
 //   deployMedia,
@@ -16,7 +16,6 @@
 // import Decimal from '../utils/Decimal';
 // import { WXDAI, Market, Media } from '../typechain';
 // import { PlatformCuts, BidShares, Ask, Bid } from "./types";
-// import { generateWallets } from "../utils/generateWallets";
 
 // chai.use(asPromised);
 
@@ -35,7 +34,7 @@
 //     mockTokenWallet,
 //     otherWallet,
 //     platformWallet,
-//     poolWallet: Wallet;
+//     poolWallet: Signer;
 //   let deployerAddress,
 //     bidderAddress,
 //     mockTokenAddress,
@@ -80,7 +79,7 @@
 //       otherWallet,
 //       platformWallet,
 //       poolWallet,
-//     ] = generateWallets(ethers.provider);
+//     ] = await ethers.getSigners();
 //     [
 //       deployerAddress,
 //       bidderAddress,

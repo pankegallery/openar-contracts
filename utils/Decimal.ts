@@ -1,6 +1,8 @@
 import { BigNumber } from "ethers";
 
 export default class Decimal {
+  value: BigNumber;
+
   static new(value: number) {
     const decimalPlaces = countDecimals(value);
     const difference = 18 - decimalPlaces;
