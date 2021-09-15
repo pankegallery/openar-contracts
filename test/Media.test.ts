@@ -2072,26 +2072,20 @@ describe("Media", () => {
 
       expect(mediaData.awKeyHex).eq(awKeyHex);
       expect(mediaData.objKeyHex).eq(objKeyHex);
-      expect(mediaData.editionOf.toString()).eq(BigNumber.from(3).toString());
-      expect(mediaData.editionNumber.toString()).eq(
-        BigNumber.from(1).toString()
-      );
+      expect(mediaData.editionOf).eq(BigNumber.from(3));
+      expect(mediaData.editionNumber).eq(BigNumber.from(1));
 
       mediaData = await token.tokenMediaData(1);
       expect(mediaData.awKeyHex).eq(awKeyHex);
       expect(mediaData.objKeyHex).eq(objKeyHex);
-      expect(mediaData.editionOf.toString()).eq(BigNumber.from(3).toString());
-      expect(mediaData.editionNumber.toString()).eq(
-        BigNumber.from(2).toString()
-      );
+      expect(mediaData.editionOf).eq(BigNumber.from(3));
+      expect(mediaData.editionNumber).eq(BigNumber.from(2));
 
       mediaData = await token.tokenMediaData(2);
       expect(mediaData.awKeyHex).eq(awKeyHex);
       expect(mediaData.objKeyHex).eq(objKeyHex);
-      expect(mediaData.editionOf.toString()).eq(BigNumber.from(3).toString());
-      expect(mediaData.editionNumber.toString()).eq(
-        BigNumber.from(3).toString()
-      );
+      expect(mediaData.editionOf).eq(BigNumber.from(3));
+      expect(mediaData.editionNumber).eq(BigNumber.from(3));
     });
 
     it("should not allow to use signature several times", async () => {

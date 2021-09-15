@@ -389,7 +389,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
                     data.objKeyHex,
                     contentHashes[i],
                     metadataHashes[i],
-                    Decimal.D256(data.editionOf).value,
+                    data.editionOf,
                     i + 1
                 );
 
@@ -764,6 +764,8 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         delete tokenCreators[tokenId];
 
         delete previousTokenOwners[tokenId];
+
+        IMarket(marketContract).removeAsk(tokenId);
     }
 
     /**
