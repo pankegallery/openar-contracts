@@ -17,10 +17,9 @@ export type MintData = {
   metadataURI: string;
   contentHash: Bytes;
   metadataHash: Bytes;
-  editionOf: BigNumberish;
-  editionNumber: BigNumberish;
+  editionOf: BigNumber;
+  editionNumber: BigNumber;
 };
-
 
 export type MintArObjectData = {
   awKeyHex: Bytes;
@@ -35,8 +34,8 @@ export type MintArObjectData = {
 export type MediaData = {
   awKeyHex: string;
   objKeyHex: string;
-  editionOf: BigNumberish;
-  editionNumber: BigNumberish;
+  editionOf: BigNumber;
+  editionNumber: BigNumber;
 };
 
 export type Ask = {
