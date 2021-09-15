@@ -15,3 +15,6 @@ coverage.json
 .env.*
 
 dist
+
+addresses/1337.json
+addresses/31337.json

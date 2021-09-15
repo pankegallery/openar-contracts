@@ -1,24 +1,17 @@
 {
-  "name": "@zoralabs/auction-house",
-  "version": "1.1.1",
+  "name": "@openar/contracts",
+  "version": "1.0.0",
   "private": false,
-  "homepage": "https://github.com/ourzora/coldies",
+  "homepage": "https://github.com/openar/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ourzora/coldies.git"
+    "url": "https://github.com/openar/openar-contracts.git"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "./dist/**/*",
-    "./dist/*"
-  ],
   "scripts": {
-    "prepublishOnly": "yarn build:contracts && yarn build:package",
     "build:contracts": "hardhat compile",
-    "build:package": "rm -rf ./dist && tsc && cp typechain/*.d.ts dist/typechain && cp -R addresses dist && cp -R artifacts/contracts dist/artifacts && cp -R contracts dist",
+    "build:typechain": "hardhat typechain",
     "test": "hardhat test",
-    "deploy": "ts-node scripts/deploy.ts"
+    "dev-deploy": "echo \"{}\" > ./addresses/31337.json && ts-node scripts/deploy.ts --chainId=31337"    
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
