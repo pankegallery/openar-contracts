@@ -377,6 +377,8 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
             );
         }
 
+        uint256[] memory tokenIds = new uint256[](tokenURIs.length);
+
         // now mint all of them
         for (uint256 i = 0; i < tokenURIs.length; i++) {
             MintData memory mData =
@@ -391,15 +393,21 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
                     i + 1
                 );
 
-            uint256 tokenId =
+            tokenIds[i] =
                 _mintForCreator(recoveredAddress, mData, bidShares);
 
             if (data.setInitialAsk) {
                 IMarket.Ask memory ask =
                     IMarket.Ask(data.initialAsk, data.currency);
-                IMarket(marketContract).setInitialAsk(tokenId, ask);
+                IMarket(marketContract).setInitialAsk(tokenIds[i], ask);
             }
         }
+
+        emit TokenObjectMinted(tokenIds, MintObjectData(
+            data.awKeyHex,
+            data.objKeyHex,
+            data.editionOf
+        ));
     }
 
     /**
@@ -415,7 +423,15 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
                 false,
             "Media: mint arObject hash already been minted"
         );
-        _mintForCreator(msg.sender, data, bidShares);
+        
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = _mintForCreator(msg.sender, data, bidShares);
+
+        emit TokenObjectMinted(tokenIds, MintObjectData(
+            data.awKeyHex,
+            data.objKeyHex,
+            data.editionOf
+        ));
     }
 
     /**
@@ -474,7 +490,14 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
             "Media: mintWithSig arObject hash already been minted"
         );
 
-        _mintForCreator(recoveredAddress, data, bidShares);
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = _mintForCreator(recoveredAddress, data, bidShares);
+
+        emit TokenObjectMinted(tokenIds, MintObjectData(
+            data.awKeyHex,
+            data.objKeyHex,
+            data.editionOf
+        ));
     }
 
     /**

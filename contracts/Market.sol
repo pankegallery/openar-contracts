@@ -16,7 +16,7 @@ import {
 import {Context} from "@openzeppelin/contracts/GSN/Context.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 interface IWETH {
     function balanceOf(address guy) external returns (uint256);
@@ -356,8 +356,6 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         whenNotPaused
         tokeOnlyCreated(tokenId)
     {
-        console.log("setBid start", msg.value, bid.amount, bid.currency);
-
         require(
             bid.bidder == msg.sender,
             "Market: bidder needs to be message sender"
@@ -369,8 +367,6 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
             bid.recipient != address(0),
             "Market: bid recipient cannot be 0 address"
         );
-
-        console.log("setBid %s %s %s", msg.value, bid.amount, bid.currency);
 
         BidShares memory bidShares = _bidShares[tokenId];
         require(
@@ -402,19 +398,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
             _removeBid(bid.bidder, tokenId);
         }
 
-        // // TODO: how to best replace the IERC20 logic? VVU:
-        // IERC20 token = IERC20(bid.currency);
-
-        // // We must check the balance that was actually transferred to the market,
-        // // as some tokens impose a transfer fee and would not actually transfer the
-        // // full amount to the market, resulting in locked funds for refunds & bid acceptance
-        // uint256 beforeBalance = token.balanceOf(address(this));
-        // token.safeTransferFrom(msg.sender, address(this), bid.amount);
-        // uint256 afterBalance = token.balanceOf(address(this));
-
         uint256 transfered = _handleIncomingBid(bid.amount, bid.currency);
-
-        console.log("Sender sent value is %s transferred are %s", msg.value, transfered);
 
         _tokenBidders[tokenId][bid.bidder] = Bid(
             transfered,
@@ -433,9 +417,6 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
             bid.currency == _tokenAsks[tokenId].currency &&
             bid.amount >= _tokenAsks[tokenId].amount
         ) {
-            console.log("Finalize exchange");
-
-
             // Finalize exchange
             _finalizeNFTTransfer(tokenId, bid.bidder);
         }
@@ -497,10 +478,8 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         Bid memory bid = _tokenBidders[tokenId][bidder];
         BidShares memory newBidShares;
 
-        // TODO: VVU: BidShares memory bidShares = _bidShares[tokenId];  
         BidShares memory bidShares = _bidShares[tokenId];
         
-
         if (bidShares.owner.value > 0)
             // Transfer bid share to owner of media
             _handleOutgoingTransfer(
@@ -745,24 +724,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
                 "Market: Sent Native Coin Value does not match specified bid amount"
             );
 
-            console.log("Sending funds to IWETH %s", address(this));
-
-
-            // TODO: VVU: remove transfer check
-            uint256 beforeBalance = IWETH(wrappedNativeCoin).balanceOf(address(this));
-
-            console.log("Before funds to IWETH %s", beforeBalance);
-
             IWETH(wrappedNativeCoin).deposit{value: amount}();
-
-            uint256 afterBalance = IWETH(wrappedNativeCoin).balanceOf(address(this));
-
-            console.log("After funds to IWETH %s", afterBalance);
-
-            require(
-                beforeBalance.add(amount) == afterBalance,
-                "Market: IWETH did not deposit expected amount"
-            );
         } else {
             // We must check the balance that was actually transferred to the auction,
             // as some tokens impose a transfer fee and would not actually transfer the
@@ -788,12 +750,8 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         if (currency == address(0)) {
             IWETH(wrappedNativeCoin).withdraw(amount);
             
-            console.log("_safeTransferNative %s %s", amount, to);
-
-
             // If the ETH transfer fails (sigh), rewrap the ETH and try send it as WETH.
             if (!_safeTransferNative(to, amount)) {
-                console.log("_fallBack _handleOutgoingTransfer %s", amount);
                 IWETH(wrappedNativeCoin).deposit{value: amount}();
                 IERC20(wrappedNativeCoin).safeTransfer(to, amount);
             }

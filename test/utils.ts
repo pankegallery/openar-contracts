@@ -59,8 +59,8 @@ export const mint = async (
   contentHash: Bytes,
   metadataHash: Bytes,
   shares: BidShares,
-  editionOf?: number,
-  editionNumber?: number
+  editionOfBN?: BigNumber,
+  editionNumberBN?: BigNumber
 ) => {
   const data: MintData = {
     tokenURI,
@@ -69,14 +69,12 @@ export const mint = async (
     objKeyHex,
     contentHash,
     metadataHash,
-    editionOf:
-      typeof editionOf !== 'undefined'
-        ? Decimal.new(editionOf).value
-        : Decimal.new(1).value,
-    editionNumber:
-      typeof editionNumber !== 'undefined'
-        ? Decimal.new(editionNumber).value
-        : Decimal.new(1).value,
+    editionOf: typeof editionOfBN !== 'undefined'
+      ? editionOfBN
+      : BigNumber.from(1),
+    editionNumber: typeof editionNumberBN !== 'undefined'
+      ? editionNumberBN
+      : BigNumber.from(1),
   };
   
   return media.mint(data, shares);
@@ -325,8 +323,8 @@ export async function mintWithSig(
   shares: BidShares,
   nonce: BigNumber,
   sig: EIP712Sig,
-  editionOf?: number,
-  editionNumber?: number
+  editionOfBN?: BigNumber,
+  editionNumberBN?: BigNumber
 ) {
   const data: MintData = {
     tokenURI,
@@ -335,14 +333,12 @@ export async function mintWithSig(
     objKeyHex,
     contentHash,
     metadataHash,
-    editionOf:
-      typeof editionOf !== 'undefined'
-        ? Decimal.new(editionOf).value
-        : Decimal.new(1).value,
-    editionNumber:
-      typeof editionNumber !== 'undefined'
-        ? Decimal.new(editionNumber).value
-        : Decimal.new(1).value,
+    editionOf: typeof editionOfBN !== 'undefined'
+      ? editionOfBN
+      : BigNumber.from(1),
+    editionNumber: typeof editionNumberBN !== 'undefined'
+      ? editionNumberBN
+      : BigNumber.from(1),
   };
 
   return token.mintWithSig(creator, data, shares, nonce, sig);

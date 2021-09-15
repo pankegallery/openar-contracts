@@ -16,6 +16,15 @@ interface IMedia {
         bytes32 s;
     }
 
+    struct MintObjectData {
+        // The Hex representation of openAR Artwork's key
+        bytes32 awKeyHex;
+        // The Hex representation of openAR ArObject's key
+        bytes32 objKeyHex;
+        // How many times has the object been minted
+        uint256 editionOf;
+    }
+
     struct MediaData {
         // The Hex representation of openAR Artwork's key
         bytes32 awKeyHex;
@@ -42,7 +51,7 @@ interface IMedia {
         bytes32 metadataHash;
         // How many times has the object been minted
         uint256 editionOf;
-        // The number of the object
+        // The edition number of the token
         uint256 editionNumber;
     }
 
@@ -63,6 +72,7 @@ interface IMedia {
         bool setInitialAsk;
     }
 
+    event TokenObjectMinted(uint256[] tokenIds, MintObjectData data);
     event TokenURIUpdated(uint256 indexed _tokenId, address owner, string _uri);
     event TokenMetadataURIUpdated(
         uint256 indexed _tokenId,

@@ -289,7 +289,6 @@ describe("MarketIntegration", () => {
     const marketAsBidder = market.connect(bidderWallet);
     const marketAsOther = market.connect(otherWallet);
 
-    // TODO: we should be able to do this away ...
     await mintCurrency(creatorWallet.address, TWO_ETH.mul(10000));
     await mintCurrency(prevOwnerWallet.address, TWO_ETH.mul(10000));
     await mintCurrency(ownerWallet.address, TWO_ETH.mul(10000));

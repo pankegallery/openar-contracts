@@ -20,8 +20,6 @@ import { generateWallets } from "../utils/generateWallets";
 
 chai.use(asPromised);
 
-const ONE_DAY = 24 * 60 * 60;
-
 // helper function so we can parse numbers and do approximate number calculations, to avoid annoying gas calculations
 const smallify = (bn: BigNumber) => bn.div(THOUSANDTH_ETH).toNumber();
 
