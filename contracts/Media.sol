@@ -53,7 +53,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
     // Mapping from token id to sha256 hash of metadata
     mapping(uint256 => bytes32) public tokenMetadataHashes;
 
-    // Mapping from token id to sha256 hash of openAR artwork key
+    // Mapping from token id to MediaData
     mapping(uint256 => MediaData) public tokenMediaData;
 
     // Mapping from token id to metadataURI
