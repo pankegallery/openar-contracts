@@ -161,6 +161,10 @@ struct MintArObjectData {
   bytes32 objKeyHex;
   // how many times shall the object be minted
   uint256 editionOf;
+  // how many will be minted in this call
+  uint256 batchSize;
+  // last minted edition number
+  uint256 batchOffset;
   // value of the Ask > 0
   uint256 initialAsk;
   // the mint Nonce

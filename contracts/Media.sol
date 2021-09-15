@@ -18,6 +18,8 @@ import {Decimal} from "./Decimal.sol";
 import {IMarket} from "./interfaces/IMarket.sol";
 import "./interfaces/IMedia.sol";
 
+// import "hardhat/console.sol";
+
 /**
  * @title A media value system, with perpetual equity to creators
  * @notice This contract provides an interface to mint media with a market
@@ -290,8 +292,6 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
      */
     function mintArObject(
         address creator,
-        // Solidity did not like an "MintData[] memory tokens",
-        // So we have to split it into for parts
         string[] memory tokenURIs,
         string[] memory metadataURIs,
         bytes32[] memory contentHashes,
@@ -307,9 +307,10 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
 
         require(
             metadataURIs.length == tokenURIs.length &&
-                contentHashes.length == tokenURIs.length &&
-                metadataHashes.length == tokenURIs.length &&
-                data.editionOf == tokenURIs.length,
+            contentHashes.length == tokenURIs.length &&
+            metadataHashes.length == tokenURIs.length &&
+            data.batchOffset + data.batchSize <= data.editionOf &&
+            data.batchSize == tokenURIs.length,
             "Media: mintArObject invalid-data"
         );
 
@@ -318,7 +319,8 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
             "Media: mintArObject invalid-nonce"
         );
 
-        mintArObjectSigNoncesState[creator][data.mintArObjectNonce] = true;
+        if (data.batchOffset + data.batchSize == data.editionOf)
+            mintArObjectSigNoncesState[creator][data.mintArObjectNonce] = true;
 
         bytes32 domainSeparator = _calculateDomainSeparator();
 
@@ -390,7 +392,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
                     contentHashes[i],
                     metadataHashes[i],
                     data.editionOf,
-                    i + 1
+                    i + 1 + data.batchOffset
                 );
 
             tokenIds[i] =
@@ -401,6 +403,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
                     IMarket.Ask(data.initialAsk, data.currency);
                 IMarket(marketContract).setInitialAsk(tokenIds[i], ask);
             }
+
         }
 
         emit TokenObjectMinted(tokenIds, MintObjectData(
@@ -408,6 +411,9 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
             data.objKeyHex,
             data.editionOf
         ));
+
+        if (data.batchOffset + data.batchSize == data.editionOf)
+            _arObjectKeyHashes[sha256(abi.encodePacked(data.objKeyHex))] = true;
     }
 
     /**
@@ -432,6 +438,9 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
             data.objKeyHex,
             data.editionOf
         ));
+
+         // now set this object key as already minted
+        _arObjectKeyHashes[sha256(abi.encodePacked(data.objKeyHex))] = true;
     }
 
     /**
@@ -498,6 +507,9 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
             data.objKeyHex,
             data.editionOf
         ));
+
+        // now set this object key as already minted
+        _arObjectKeyHashes[sha256(abi.encodePacked(data.objKeyHex))] = true;
     }
 
     /**
@@ -711,9 +723,6 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         previousTokenOwners[tokenId] = creator;
 
         IMarket(marketContract).setBidShares(tokenId, bidShares);
-
-        // then set the
-        _arObjectKeyHashes[sha256(abi.encodePacked(data.objKeyHex))] = true;
 
         return tokenId;
     }

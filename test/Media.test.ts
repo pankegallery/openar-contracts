@@ -20,7 +20,7 @@ import {
   signMintWithSig,
   signPermit,
 } from "./utils";
-import Decimal from "../utils/Decimal";
+import { Decimal, getBytes32FromString } from "../utils";
 import { WXDAI, Market, Media, BaseERC20 } from "../typechain";
 import { PlatformCuts, BidShares, Ask, Bid, MediaData } from "./types";
 import { generateWallets } from "../utils/generateWallets";
@@ -95,7 +95,7 @@ const justAnotherObjKeyHash = sha256(justAnotherObjKeyHex);
 const justAnotherObjKeyHashBytes = ethers.utils.arrayify(justAnotherObjKeyHash);
 
 const defaultTokenId = 1;
-
+const defaultBatchSize = 10;
 let tokenURI = "www.example.com";
 let metadataURI = "www.example2.com";
 
@@ -1843,6 +1843,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -1893,6 +1894,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -1955,6 +1957,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI, tokenURI],
@@ -2010,6 +2013,56 @@ describe("Media", () => {
       expect(logDescription.args.data.editionOf).to.eq(BigNumber.from(3));
     });
 
+    it("should batch mint 107 tokens", async () => {
+      const token = media.connect(deployerWallet);
+      const timestamp = new Date().getTime();
+
+      const max = 107;
+
+      const sig = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        awKeyHash,
+        objKeyHash,
+        BigNumber.from(max),
+        false,
+        Decimal.new(0),
+        BigNumber.from(timestamp),
+        await deployerWallet.getChainId()
+      );
+
+      const tokenCount1 = (await token.totalSupply()).toNumber();
+      
+      await expect(mintArObjectWithSig(
+        defaultBatchSize,
+        token,
+        creatorWallet.address,
+        [...Array(max).keys()].map((i) => tokenURI),
+        [...Array(max).keys()].map((i) => metadataURI),
+        [...Array(max).keys()].map((i) => getBytes32FromString(`content hash ${i + 1}`)),
+        [...Array(max).keys()].map((i) => getBytes32FromString(`metadata hash ${i + 1}`)),
+        awKeyHexBytes,
+        objKeyHexBytes,
+        BigNumber.from(max),
+        false,
+        Decimal.new(0),
+        BigNumber.from(timestamp),
+        currency.address,
+        {
+          prevOwner: Decimal.new(0),
+          owner: Decimal.new(0),
+          creator: Decimal.new(85),
+          platform: Decimal.new(10),
+          pool: Decimal.new(5),
+        },
+        sig
+      )).fulfilled;
+      const tokenCount2 = (await token.totalSupply()).toNumber();
+
+      expect(tokenCount1 + max).to.eq(tokenCount2);
+    });
+
     it("should correctly set MintData", async () => {
       const token = media.connect(deployerWallet);
 
@@ -2032,6 +2085,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI, tokenURI],
@@ -2108,6 +2162,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -2134,6 +2189,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -2179,6 +2235,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -2220,6 +2277,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -2256,7 +2314,7 @@ describe("Media", () => {
         token.address,
         awKeyHash,
         objKeyHash,
-        BigNumber.from(1),
+        BigNumber.from(3),
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
@@ -2265,6 +2323,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI],
@@ -2281,7 +2340,7 @@ describe("Media", () => {
           ],
           awKeyHexBytes,
           objKeyHexBytes,
-          BigNumber.from(1),
+          BigNumber.from(3),
           false,
           Decimal.new(0),
           BigNumber.from(timestamp),
@@ -2299,6 +2358,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI, tokenURI],
@@ -2315,7 +2375,7 @@ describe("Media", () => {
           ],
           awKeyHexBytes,
           objKeyHexBytes,
-          BigNumber.from(1),
+          BigNumber.from(3),
           false,
           Decimal.new(0),
           BigNumber.from(timestamp),
@@ -2333,6 +2393,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI, tokenURI],
@@ -2345,7 +2406,7 @@ describe("Media", () => {
           ],
           awKeyHexBytes,
           objKeyHexBytes,
-          BigNumber.from(1),
+          BigNumber.from(3),
           false,
           Decimal.new(0),
           BigNumber.from(timestamp),
@@ -2363,6 +2424,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI, tokenURI],
@@ -2375,7 +2437,7 @@ describe("Media", () => {
           [metadataHashBytes, otherMetadataHashBytes],
           awKeyHexBytes,
           objKeyHexBytes,
-          BigNumber.from(1),
+          BigNumber.from(3),
           false,
           Decimal.new(0),
           BigNumber.from(timestamp),
@@ -2412,18 +2474,15 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
-          [tokenURI, tokenURI, tokenURI],
-          [metadataURI, metadataURI, metadataURI],
+          [tokenURI],
+          [metadataURI],
           [
-            contentHashBytes,
-            otherContentHashBytes,
             justAnotherContentHashBytes,
           ],
           [
-            metadataHashBytes,
-            otherMetadataHashBytes,
             justAnotherMetadataHashBytes,
           ],
           awKeyHexBytes,
@@ -2459,6 +2518,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI, tokenURI],
@@ -2514,6 +2574,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI, tokenURI],
@@ -2571,6 +2632,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -2616,6 +2678,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           otherWallet.address,
           [tokenURI],
@@ -2669,6 +2732,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           otherWallet.address,
           [tokenURI],
@@ -2714,6 +2778,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           otherWallet.address,
           [tokenURI],
@@ -2759,6 +2824,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           otherWallet.address,
           [tokenURI],
@@ -2803,6 +2869,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -2848,6 +2915,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],
@@ -2896,6 +2964,7 @@ describe("Media", () => {
 
       await expect(
         mintArObjectWithSig(
+          defaultBatchSize,
           token,
           creatorWallet.address,
           [tokenURI],

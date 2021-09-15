@@ -564,6 +564,7 @@ describe("MarketIntegration", () => {
 
       await expect(
         mintArObjectWithSig(
+          10,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI],
@@ -762,6 +763,7 @@ describe("MarketIntegration", () => {
       );
       await expect(
         mintArObjectWithSig(
+          10,
           token,
           creatorWallet.address,
           [tokenURI, tokenURI],

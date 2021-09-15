@@ -26,6 +26,8 @@ export type MintArObjectData = {
   objKeyHex: Bytes;
   editionOf: BigNumber;
   initialAsk: BigNumber;
+  batchSize: BigNumber;
+  batchOffset: BigNumber;
   mintArObjectNonce: BigNumber;
   currency: string;
   setInitialAsk: boolean;

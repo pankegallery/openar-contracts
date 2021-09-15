@@ -15,7 +15,6 @@
   "include": [
     "./typechain",
     "./addresses",
-    "index.ts"
   ],
   "files": ["./hardhat.config.ts"]
 }

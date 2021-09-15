@@ -6,6 +6,9 @@ import {
   BaseERC20,
   Market,
 } from "../typechain";
+
+import {ContractTransaction} from "ethers";
+
 import {
   fromRpcSig,
 } from 'ethereumjs-util';
@@ -346,6 +349,7 @@ export async function mintWithSig(
 
 
 export async function mintArObjectWithSig(
+  batchSize: number,
   token: Media,
   creator: string,
   tokenURIs: string[],
@@ -354,7 +358,7 @@ export async function mintArObjectWithSig(
   metadataHashes: Bytes[],
   awKeyHex: Bytes,
   objKeyHex: Bytes,
-  editionOfBN: BigNumber,
+  editionOf: BigNumber,
   setInitialAsk: boolean,
   initialAsk: Decimal,
   nonceBN: BigNumber,
@@ -362,24 +366,41 @@ export async function mintArObjectWithSig(
   shares: BidShares,
   sig: EIP712Sig
 ) {
-  const data: MintArObjectData = {
-    awKeyHex,
-    objKeyHex,
-    editionOf: editionOfBN,
-    initialAsk: initialAsk.value,
-    mintArObjectNonce: nonceBN,
-    currency: currencyAddr,
-    setInitialAsk,
-  };
+  let offset = 0;
 
-  return token.mintArObject(
-    creator,
-    tokenURIs,
-    metadataURIs,
-    contentHashes,
-    metadataHashes,
-    data,
-    shares,
-    sig
-  );
+  return new Promise(async (resolve, reject) => {
+    while (offset < editionOf.toNumber()) {
+      let nextBatchSize = batchSize;
+      if (offset + batchSize > editionOf.toNumber()) 
+        nextBatchSize = editionOf.toNumber() % batchSize;
+      
+      const data: MintArObjectData = {
+        awKeyHex,
+        objKeyHex,
+        editionOf,
+        initialAsk: initialAsk.value,
+        batchSize: BigNumber.from(nextBatchSize),
+        batchOffset: BigNumber.from(offset),
+        mintArObjectNonce: nonceBN,
+        currency: currencyAddr,
+        setInitialAsk,
+      };
+
+      await token.mintArObject(
+        creator,
+        tokenURIs.slice(offset, offset + nextBatchSize),
+        metadataURIs.slice(offset, offset + nextBatchSize),
+        contentHashes.slice(offset, offset + nextBatchSize),
+        metadataHashes.slice(offset, offset + nextBatchSize),
+        data,
+        shares,
+        sig
+      ).catch((err) => reject(err));
+  
+      offset += batchSize;
+    }
+
+    resolve(true);
+  })
+  
 }
