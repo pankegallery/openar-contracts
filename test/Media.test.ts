@@ -219,6 +219,8 @@ describe("Media", () => {
     ] = generateWallets(ethers.provider);
 
     [
+
+
       deployerAddress,
       bidderAddress,
       prevOwnerAddress,
@@ -1873,6 +1875,191 @@ describe("Media", () => {
       expect(tokenCount1 + 1).to.eq(tokenCount2);
     });
 
+    it("should mint an ArObject as editon of 1 token for a given creator with a valid signature and a very high initial ask", async () => {
+      const token = media.connect(deployerWallet);
+
+      const timestamp = new Date().getTime();
+
+      const sig = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        awKeyHash,
+        objKeyHash,
+        BigNumber.from(1),
+        true,
+        Decimal.new(22222),
+        BigNumber.from(timestamp),
+        await deployerWallet.getChainId()
+      );
+
+      const tokenCount1 = (await token.totalSupply()).toNumber();
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [tokenURI],
+          [metadataURI],
+          [contentHashBytes],
+          [metadataHashBytes],
+          awKeyHexBytes,
+          objKeyHexBytes,
+          BigNumber.from(1),
+          true,
+          Decimal.new(22222),
+          BigNumber.from(timestamp),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig
+        )
+      ).fulfilled;
+
+      const tokenCount2 = (await token.totalSupply()).toNumber();
+
+      expect(tokenCount1 + 1).to.eq(tokenCount2);
+    });
+
+
+    it("should mint several different ArObject sas editon of 1 token for a given creator with a valid signature and an initial ask", async () => {
+      const token = media.connect(deployerWallet);
+
+      const timestamp = new Date().getTime();
+
+      const sig = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        awKeyHash,
+        objKeyHash,
+        BigNumber.from(1),
+        true,
+        Decimal.new(222),
+        BigNumber.from(timestamp),
+        await deployerWallet.getChainId()
+      );
+
+      const tokenCount1 = (await token.totalSupply()).toNumber();
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [tokenURI],
+          [metadataURI],
+          [contentHashBytes],
+          [metadataHashBytes],
+          awKeyHexBytes,
+          objKeyHexBytes,
+          BigNumber.from(1),
+          true,
+          Decimal.new(222),
+          BigNumber.from(timestamp),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig
+        )
+      ).fulfilled;
+
+      const sig2 = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        otherAwKeyHash,
+        otherObjKeyHash,
+        BigNumber.from(1),
+        true,
+        Decimal.new(333),
+        BigNumber.from(timestamp + 200),
+        await deployerWallet.getChainId()
+      );
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [tokenURI],
+          [metadataURI],
+          [otherContentHashBytes],
+          [otherMetadataHashBytes],
+          otherAwKeyHexBytes,
+          otherObjKeyHexBytes,
+          BigNumber.from(1),
+          true,
+          Decimal.new(333),
+          BigNumber.from(timestamp + 200),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig2
+        )
+      ).fulfilled;
+      console.log("Now 3");
+      const sig3 = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        justAnotherAwKeyHash,
+        justAnotherObjKeyHash,
+        BigNumber.from(1),
+        true,
+        Decimal.new(44),
+        BigNumber.from(timestamp + 400),
+        await deployerWallet.getChainId()
+      );
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [tokenURI],
+          [metadataURI],
+          [justAnotherContentHashBytes],
+          [justAnotherMetadataHashBytes],
+          justAnotherAwKeyHexBytes,
+          justAnotherObjKeyHexBytes,
+          BigNumber.from(1),
+          true,
+          Decimal.new(44),
+          BigNumber.from(timestamp + 400),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig3
+        )
+      ).fulfilled;
+
+      const tokenCount2 = (await token.totalSupply()).toNumber();
+
+      expect(tokenCount1 + 3).to.eq(tokenCount2);
+    });
+
     it("should emit a correct TokenObjectMinted event", async () => {
       const token = media.connect(deployerWallet);
       const timestamp = new Date().getTime();
@@ -2033,31 +2220,37 @@ describe("Media", () => {
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();
-      
-      await expect(mintArObjectWithSig(
-        defaultBatchSize,
-        token,
-        creatorWallet.address,
-        [...Array(max).keys()].map((i) => tokenURI),
-        [...Array(max).keys()].map((i) => metadataURI),
-        [...Array(max).keys()].map((i) => getBytes32FromString(`content hash ${i + 1}`)),
-        [...Array(max).keys()].map((i) => getBytes32FromString(`metadata hash ${i + 1}`)),
-        awKeyHexBytes,
-        objKeyHexBytes,
-        BigNumber.from(max),
-        false,
-        Decimal.new(0),
-        BigNumber.from(timestamp),
-        currency.address,
-        {
-          prevOwner: Decimal.new(0),
-          owner: Decimal.new(0),
-          creator: Decimal.new(85),
-          platform: Decimal.new(10),
-          pool: Decimal.new(5),
-        },
-        sig
-      )).fulfilled;
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [...Array(max).keys()].map((i) => tokenURI),
+          [...Array(max).keys()].map((i) => metadataURI),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`content hash ${i + 1}`)
+          ),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`metadata hash ${i + 1}`)
+          ),
+          awKeyHexBytes,
+          objKeyHexBytes,
+          BigNumber.from(max),
+          false,
+          Decimal.new(0),
+          BigNumber.from(timestamp),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig
+        )
+      ).fulfilled;
       const tokenCount2 = (await token.totalSupply()).toNumber();
 
       expect(tokenCount1 + max).to.eq(tokenCount2);
@@ -2479,12 +2672,8 @@ describe("Media", () => {
           creatorWallet.address,
           [tokenURI],
           [metadataURI],
-          [
-            justAnotherContentHashBytes,
-          ],
-          [
-            justAnotherMetadataHashBytes,
-          ],
+          [justAnotherContentHashBytes],
+          [justAnotherMetadataHashBytes],
           awKeyHexBytes,
           objKeyHexBytes,
           BigNumber.from(2),

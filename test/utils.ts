@@ -15,7 +15,7 @@ import {
 import { sha256 } from "ethers/lib/utils";
 import Decimal from "../utils/Decimal";
 import { BigNumber, Bytes, BigNumberish, Wallet } from "ethers";
-import { MintData, BidShares, MintArObjectData } from "./types";
+import { MintData, BidShares, MintArObjectData, EIP712Sig } from "./types";
 import sigUtils from 'eth-sig-util';
 import { BytesLike } from 'ethers/lib/utils';
 import { MediaFactory } from "@zoralabs/core/dist/typechain";
@@ -86,13 +86,6 @@ export const mint = async (
 export const revert = (messages: TemplateStringsArray) =>
   `VM Exception while processing transaction: revert ${messages[0]}`;
 
-
-export type EIP712Sig = {
-  deadline: BigNumberish;
-  v: any;
-  r: any;
-  s: any;
-};
 
 export async function signPermit(
   media: Media,

@@ -2,6 +2,15 @@ import { BigNumber, BigNumberish, Bytes } from 'ethers';
 
 export type DecimalValue = { value: BigNumber };
 
+
+export type EIP712Sig = {
+  deadline: BigNumberish;
+  v: any;
+  r: any;
+  s: any;
+};
+
+
 export type BidShares = {
   owner: DecimalValue;
   prevOwner: DecimalValue;
