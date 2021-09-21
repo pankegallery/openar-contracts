@@ -115,7 +115,7 @@ export async function signPermit(
 
     try {
       
-      const sig = sigUtils.signTypedData(Buffer.from(owner.privateKey.slice(2), 'hex'), {
+      const sig = sigUtils.signTypedData_v4(Buffer.from(owner.privateKey.slice(2), 'hex'), {
         data: {
           types: {
             EIP712Domain: [
@@ -181,7 +181,7 @@ export async function signMintWithSig(
     const name = await media.name();
    
     try {
-      const sig = sigUtils.signTypedData(Buffer.from(owner.privateKey.slice(2), 'hex'), {
+      const sig = sigUtils.signTypedData_v4(Buffer.from(owner.privateKey.slice(2), 'hex'), {
         data: {
           types: {
             EIP712Domain: [
@@ -245,8 +245,6 @@ export async function signMintArObject(
   chainId: number
 ) {
   return new Promise<EIP712Sig>(async (res, reject) => {
-    // const mediaContract = MediaFactory.connect(tokenAddress, owner);
-
     const deadline = Math.floor(new Date().getTime() / 1000) + 60 * 60 * 24; // 24 hours
     const name = await media.name();
 
@@ -254,9 +252,8 @@ export async function signMintArObject(
     const initialAsk = initialAskDecimal.value.toString();
     const nonce = nonceBN.toString();
 
-    
     try {
-      const sig = sigUtils.signTypedData(Buffer.from(owner.privateKey.slice(2), 'hex'), {
+      const sig = sigUtils.signTypedData_v4(Buffer.from(owner.privateKey.slice(2), 'hex'), {
         data: {
           types: {
             EIP712Domain: [
@@ -289,7 +286,7 @@ export async function signMintArObject(
             setInitialAsk,
             initialAsk,
             nonce,
-            deadline,
+            deadline: deadline.toString(),
           },
         },
       });

@@ -1928,7 +1928,7 @@ describe("Media", () => {
     });
 
 
-    it("should mint several different ArObject sas editon of 1 token for a given creator with a valid signature and an initial ask", async () => {
+    it("should mint several different ArObject as editon of 1 token for a given creator with a valid signature and an initial ask", async () => {
       const token = media.connect(deployerWallet);
 
       const timestamp = new Date().getTime();

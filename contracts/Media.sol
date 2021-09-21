@@ -80,7 +80,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
     // keccak256("MintArObject(bytes32 awKeyHash,bytes32 objKeyHash,uint256 editionOf,bool setInitialAsk,uint256 initialAsk,uint256 nonce,uint256 deadline)");
     bytes32 public constant MINT_AROBJECT_TYPEHASH =
         0x60281011d055d6009ac61cc127d5ba3be4c3365ba07cd49830c77f68bdc52141;
-
+    
     // Mapping from address to token id to permit nonce
     mapping(address => mapping(uint256 => uint256)) public permitNonces;
 

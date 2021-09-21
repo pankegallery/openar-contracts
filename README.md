@@ -11,6 +11,19 @@ The primary changes to the contracts where.
 2. Unlike the Zora protocol we wanted to be able to batch mint an editon N artwork and need to be able to schedule several mint requests before execution. As `mintWithSig` does not support batch minting (the user would have to sign each individual mint) and the nonce handling allows only one active signature per artist we had to develop a new `mintArArtwork` function in the media contract. This function can only be exectuted by the contract owner and requires a valid `EIP712` signature of the artist. 
 3. We thought that contracts should be Ownable, to be able to transfer contract ownership if necessary
 4. Also while the contracts are not upgradeable we made sure to decouple them by making the relating addresses configurable. This way, if necessary, we can write a new market logic for the existing token contract. 
+5. As we are minting edition of NFTs it is not enough the only hash the content, we therefor use a SHA256 hash of the hash of the content pointed to by tokenURI and the hash of the string edition_number/edition_of, e.g. "4/10", as the "contentHash"
+
+We use the following helper functions from @openar-monorepo/apps/api/utils/sha256Tools to calculate the content hash:
+```
+stringToBytes(
+  sha256FromString(
+    `${await sha256FromFile(
+      [FULL PATH TO FILE]
+    )}${sha256FromString(`[EDITION_NUMBER]/[EDITION_OF]`)}`
+  )
+)
+```
+
 
 ### Using the protocol without from outside our platform
 The conrtracts are build to be used around our platform. Or put differently our platform expect you to use the contracts via the platform. You can call the functions directly. Just don't expect minted tokens to show up in the listings, bids to be accepted, 
@@ -144,7 +157,7 @@ struct MintData {
   bytes32 awKeyHex;
   // The Hex representation of ArObject's key
   bytes32 objKeyHex;
-  // A SHA256 hash of the content pointed to by tokenURI
+  // A SHA256 hash of the hash of the content pointed to by tokenURI and the hash of the string edition_number/edition_of "4/10"
   bytes32 contentHash;
   // A SHA256 hash of the content pointed to by metadataURI
   bytes32 metadataHash;
