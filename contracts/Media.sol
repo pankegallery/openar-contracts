@@ -308,10 +308,18 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         require(
             metadataURIs.length == tokenURIs.length &&
             contentHashes.length == tokenURIs.length &&
-            metadataHashes.length == tokenURIs.length &&
-            data.batchOffset + data.batchSize <= data.editionOf &&
+            metadataHashes.length == tokenURIs.length,
+            "Media: mintArObject invalid-data 1"
+        );
+
+        require(
+            data.batchOffset + data.batchSize <= data.editionOf,
+            "Media: mintArObject invalid-data 2"
+        );
+
+        require(
             data.batchSize == tokenURIs.length,
-            "Media: mintArObject invalid-data"
+            "Media: mintArObject invalid-data 3"
         );
 
         require(
