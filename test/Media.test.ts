@@ -2014,7 +2014,7 @@ describe("Media", () => {
           sig2
         )
       ).fulfilled;
-      console.log("Now 3");
+      
       const sig3 = await signMintArObject(
         media,
         creatorWallet,
@@ -2200,11 +2200,11 @@ describe("Media", () => {
       expect(logDescription.args.data.editionOf).to.eq(BigNumber.from(3));
     });
 
-    it("should batch mint 107 tokens", async () => {
+    it("should batch mint 100 tokens", async () => {
       const token = media.connect(deployerWallet);
       const timestamp = new Date().getTime();
 
-      const max = 107;
+      const max = 100;
 
       const sig = await signMintArObject(
         media,
@@ -2547,7 +2547,7 @@ describe("Media", () => {
           },
           sig
         )
-      ).rejectedWith("Media: mintArObject invalid-data");
+      ).rejectedWith("Media: mintArObject invalid-data 1");
 
       await expect(
         mintArObjectWithSig(
@@ -2582,7 +2582,7 @@ describe("Media", () => {
           },
           sig
         )
-      ).rejectedWith("Media: mintArObject invalid-data");
+      ).rejectedWith("Media: mintArObject invalid-data 1");
 
       await expect(
         mintArObjectWithSig(
@@ -2613,7 +2613,7 @@ describe("Media", () => {
           },
           sig
         )
-      ).rejectedWith("Media: mintArObject invalid-data");
+      ).rejectedWith("Media: mintArObject invalid-data 1");
 
       await expect(
         mintArObjectWithSig(
@@ -2644,7 +2644,7 @@ describe("Media", () => {
           },
           sig
         )
-      ).rejectedWith("Media: mintArObject invalid-data");
+      ).rejectedWith("Media: mintArObject invalid-data 1");
     });
 
     it("should only mint if edition size and length of data arrays match", async () => {
@@ -2690,7 +2690,7 @@ describe("Media", () => {
           },
           sig
         )
-      ).rejectedWith("Media: mintArObject invalid-data");
+      ).rejectedWith("Media: mintArObject invalid-data 3");
 
       const sig2 = await signMintArObject(
         media,

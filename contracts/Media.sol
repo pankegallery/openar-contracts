@@ -18,6 +18,8 @@ import {Decimal} from "./Decimal.sol";
 import {IMarket} from "./interfaces/IMarket.sol";
 import "./interfaces/IMedia.sol";
 
+// TODO: Split mint wallet from deployer wallet
+// TODO: MaxEditionOf 
 // import "hardhat/console.sol";
 
 /**

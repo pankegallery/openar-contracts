@@ -19,14 +19,19 @@ import {
   signMintArObject,
   mintArObjectWithSig,
 } from "./utils";
-import Decimal from "../utils/Decimal";
+import {
+  getBytes32FromString,
+  Decimal,
+  nanoidCustom16,
+  generateWallets,
+} from "../utils";
 import { WXDAI, Market, Media, BaseERC20 } from "../typechain";
 import { PlatformCuts, BidShares, Ask, Bid } from "./types";
 import { sha256 } from "ethers/lib/utils";
 
-import { generateWallets } from "../utils/generateWallets";
-
 chai.use(asPromised);
+
+const defaultBatchSize = 10;
 
 let contentHex: string;
 let contentHash: string;
@@ -393,7 +398,7 @@ describe("MarketIntegration", () => {
     await deploy();
   });
 
-  describe('#setBidShares', () => {
+  describe("#setBidShares", () => {
     beforeEach(async () => {
       await deploy();
       const asCreator = media.connect(creatorWallet);
@@ -422,15 +427,15 @@ describe("MarketIntegration", () => {
       );
     });
 
-    it('should reject if called directly', async () => {
+    it("should reject if called directly", async () => {
       const auction = market.connect(creatorWallet);
       await expect(
         setBidShares(auction, defaultTokenId, defaultBidSharesFurtherSale)
-      ).rejectedWith('Market: Only media contract');
+      ).rejectedWith("Market: Only media contract");
     });
   });
 
-  describe('#setAsk', () => {
+  describe("#setAsk", () => {
     beforeEach(async () => {
       await deploy();
       const asCreator = media.connect(creatorWallet);
@@ -459,32 +464,32 @@ describe("MarketIntegration", () => {
       );
     });
 
-    it('should set the ask', async () => {
+    it("should set the ask", async () => {
       const auction = market.connect(creatorWallet);
       await expect(setAsk(auction, 0, defaultAsk)).fulfilled;
     });
 
-    it('should set the ask in native currency', async () => {
+    it("should set the ask in native currency", async () => {
       const auction = market.connect(creatorWallet);
       await expect(setAsk(auction, 0, { ...defaultAsk, currency: AddressZero }))
         .fulfilled;
     });
 
-    it('should reject if the ask is 0', async () => {
+    it("should reject if the ask is 0", async () => {
       const auction = market.connect(creatorWallet);
       await expect(
         setAsk(auction, 0, { ...defaultAsk, amount: 0 })
-      ).rejectedWith('Market: Ask needs to be > 0');
+      ).rejectedWith("Market: Ask needs to be > 0");
     });
 
-    it('should reject if the ask amount is invalid and cannot be split', async () => {
+    it("should reject if the ask amount is invalid and cannot be split", async () => {
       const auction = market.connect(creatorWallet);
       await expect(
         setAsk(auction, 0, { ...defaultAsk, amount: 101 })
-      ).rejectedWith('Market: Ask invalid for share splitting');
+      ).rejectedWith("Market: Ask invalid for share splitting");
     });
 
-    it('should emit an event if the ask is set', async () => {
+    it("should emit an event if the ask is set", async () => {
       const auction = market.connect(otherWallet);
 
       const block = await ethers.provider.getBlockNumber();
@@ -501,7 +506,7 @@ describe("MarketIntegration", () => {
       expect(logDescription.args.ask.currency).to.eq(defaultAsk.currency);
     });
 
-    it('should emit an event if the ask is set in native currency', async () => {
+    it("should emit an event if the ask is set in native currency", async () => {
       const auction = market.connect(otherWallet);
 
       const block = await ethers.provider.getBlockNumber();
@@ -521,7 +526,7 @@ describe("MarketIntegration", () => {
       expect(logDescription.args.ask.currency).to.eq(AddressZero);
     });
 
-    it('should reject if the ask is too low', async () => {
+    it("should reject if the ask is too low", async () => {
       const auction = market.connect(otherWallet);
 
       await expect(
@@ -529,12 +534,11 @@ describe("MarketIntegration", () => {
           amount: 1,
           currency: AddressZero,
         })
-      ).rejectedWith('Market: Ask invalid for share splitting');
+      ).rejectedWith("Market: Ask invalid for share splitting");
     });
   });
 
-  describe('#setAskForBatch', () => {
-
+  describe("#setAskForBatch", () => {
     beforeEach(async () => {
       await deploy();
 
@@ -601,19 +605,21 @@ describe("MarketIntegration", () => {
       );
     });
 
-    it('should set the asks for one token', async () => {
+    it("should set the asks for one token", async () => {
       const creatorMarket = market.connect(creatorWallet);
-      await expect(setAskForBatch(creatorMarket, [0], objKeyHexBytes, defaultAsk))
-        .fulfilled;
+      await expect(
+        setAskForBatch(creatorMarket, [0], objKeyHexBytes, defaultAsk)
+      ).fulfilled;
     });
 
-    it('should set the asks for multiple token', async () => {
+    it("should set the asks for multiple token", async () => {
       const creatorMarket = market.connect(creatorWallet);
-      await expect(setAskForBatch(creatorMarket, [0, 1], objKeyHexBytes, defaultAsk))
-        .fulfilled;
+      await expect(
+        setAskForBatch(creatorMarket, [0, 1], objKeyHexBytes, defaultAsk)
+      ).fulfilled;
     });
 
-    it('should set the asks for multiple token in native currency', async () => {
+    it("should set the asks for multiple token in native currency", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
         setAskForBatch(creatorMarket, [0, 1], objKeyHexBytes, {
@@ -623,22 +629,102 @@ describe("MarketIntegration", () => {
       ).fulfilled;
     });
 
-    it('should reject if objKeyHexBytes does not match', async () => {
+    it("should reject if objKeyHexBytes does not match", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
         setAskForBatch(creatorMarket, [0, 1], otherObjKeyHexBytes, defaultAsk)
-      ).rejectedWith('Market: setAskForBatch only specified objKeyHex');
+      ).rejectedWith("Market: setAskForBatch only specified objKeyHex");
     });
 
-    it('should reject if called with tokenId that is not owned by the caller', async () => {
+    it("should reject if called with tokenId that is not owned by the caller", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
-        setAskForBatch(creatorMarket, [2], justAnotherObjKeyHexBytes, defaultAsk)
-      ).rejectedWith('setAskForBatch Only approved or owner');
+        setAskForBatch(
+          creatorMarket,
+          [2],
+          justAnotherObjKeyHexBytes,
+          defaultAsk
+        )
+      ).rejectedWith("setAskForBatch Only approved or owner");
+    });
+
+    it("should batch mint 100 tokens and set a new ask for the batch", async () => {
+      const token = media.connect(deployerWallet);
+      const creatorMarket = market.connect(creatorWallet);
+
+      const timestamp = new Date().getTime();
+
+      const max = 100;
+
+      const oKey = nanoidCustom16();
+      const oKeyHex = ethers.utils.formatBytes32String(oKey);
+      const oKeyHexBytes = ethers.utils.arrayify(oKeyHex);
+      const oKeyHash = sha256(oKeyHex);
+
+      const sig = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        awKeyHash,
+        oKeyHash,
+        BigNumber.from(max),
+        true,
+        Decimal.new(122),
+        BigNumber.from(timestamp),
+        await deployerWallet.getChainId()
+      );
+
+      const tokenCount1 = (await token.totalSupply()).toNumber();
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [...Array(max).keys()].map((i) => tokenURI),
+          [...Array(max).keys()].map((i) => metadataURI),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`test content hash ${i + 1}`)
+          ),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`test metadata hash ${i + 1}`)
+          ),
+          awKeyHexBytes,
+          oKeyHexBytes,
+          BigNumber.from(max),
+          true,
+          Decimal.new(122),
+          BigNumber.from(timestamp),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig
+        )
+      ).fulfilled;
+      const tokenCount2 = (await token.totalSupply()).toNumber();
+
+      expect(tokenCount1 + max).to.eq(tokenCount2);
+
+      const ids = [...Array(max).keys()].map(
+        (_i, index) => index + (tokenCount2 - max)
+      );
+
+      const ask = {
+        ...defaultAsk,
+        amount: TWO_ETH,
+      };
+
+      await expect(setAskForBatch(creatorMarket, ids, oKeyHexBytes, ask))
+        .fulfilled;
     });
   });
 
-  describe('#removeAsk', () => {
+  describe("#removeAsk", () => {
     beforeEach(async () => {
       await deploy();
       const asCreator = media.connect(creatorWallet);
@@ -667,7 +753,7 @@ describe("MarketIntegration", () => {
       );
     });
 
-    it('should remove the ask', async () => {
+    it("should remove the ask", async () => {
       const marketCreator = market.connect(creatorWallet);
 
       await setAsk(marketCreator, 0, defaultAsk);
@@ -678,7 +764,7 @@ describe("MarketIntegration", () => {
       expect(ask.currency).eq(AddressZero);
     });
 
-    it('should remove the ask in native currency', async () => {
+    it("should remove the ask in native currency", async () => {
       const marketCreator = market.connect(creatorWallet);
 
       await setAsk(marketCreator, 0, { ...defaultAsk, currency: AddressZero });
@@ -689,7 +775,7 @@ describe("MarketIntegration", () => {
       expect(ask.currency).eq(AddressZero);
     });
 
-    it('should emit an Ask Removed event', async () => {
+    it("should emit an Ask Removed event", async () => {
       const token = media.connect(creatorWallet);
       const marketCreator = market.connect(creatorWallet);
       await setAsk(marketCreator, 0, defaultAsk);
@@ -707,7 +793,7 @@ describe("MarketIntegration", () => {
       expect(logDescription.args.ask.currency).to.eq(defaultAsk.currency);
     });
 
-    it('should emit an Ask Removed event native currency', async () => {
+    it("should emit an Ask Removed event native currency", async () => {
       const token = media.connect(creatorWallet);
       const marketCreator = market.connect(creatorWallet);
       await setAsk(marketCreator, 0, { ...defaultAsk, currency: AddressZero });
@@ -725,13 +811,13 @@ describe("MarketIntegration", () => {
       expect(logDescription.args.ask.currency).to.eq(AddressZero);
     });
 
-    it('should not be callable by anyone that is not owner or approved', async () => {
+    it("should not be callable by anyone that is not owner or approved", async () => {
       const marketCreator = market.connect(creatorWallet);
       const marketOther = market.connect(otherWallet);
       await setAsk(marketCreator, 0, defaultAsk);
 
       await expect(removeAsk(marketOther, 0)).rejectedWith(
-        'Market: Only media caller, approved, or owner'
+        "Market: Only media caller, approved, or owner"
       );
     });
   });
@@ -827,6 +913,75 @@ describe("MarketIntegration", () => {
         "removeAskForBatch Only approved or owner"
       );
     });
+
+    it("should batch mint 100 tokens and remove the ask as one batch", async () => {
+      const token = media.connect(deployerWallet);
+      const creatorMarket = market.connect(creatorWallet);
+
+      const timestamp = new Date().getTime();
+
+      const max = 100;
+
+      const oKey = nanoidCustom16();
+      const oKeyHex = ethers.utils.formatBytes32String(oKey);
+      const oKeyHexBytes = ethers.utils.arrayify(oKeyHex);
+      const oKeyHash = sha256(oKeyHex);
+
+      const sig = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        awKeyHash,
+        oKeyHash,
+        BigNumber.from(max),
+        true,
+        Decimal.new(122),
+        BigNumber.from(timestamp),
+        await deployerWallet.getChainId()
+      );
+
+      const tokenCount1 = (await token.totalSupply()).toNumber();
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [...Array(max).keys()].map((i) => tokenURI),
+          [...Array(max).keys()].map((i) => metadataURI),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`test content hash ${i + 1}`)
+          ),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`test metadata hash ${i + 1}`)
+          ),
+          awKeyHexBytes,
+          oKeyHexBytes,
+          BigNumber.from(max),
+          true,
+          Decimal.new(122),
+          BigNumber.from(timestamp),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig
+        )
+      ).fulfilled;
+      const tokenCount2 = (await token.totalSupply()).toNumber();
+
+      expect(tokenCount1 + max).to.eq(tokenCount2);
+
+      const ids = [...Array(max).keys()].map(
+        (_i, index) => index + (tokenCount2 - max)
+      );
+
+      await expect(removeAskForBatch(creatorMarket, ids)).fulfilled;
+    });
   });
 
   describe("#setBid", () => {
@@ -859,99 +1014,99 @@ describe("MarketIntegration", () => {
       );
     });
 
-  it("should revert if the bidder does not have a high enough allowance for their bidding currency", async () => {
-    const auction = market.connect(bidderWallet);
-    await expect(
-      setBid(
-        auction,
-        defaultBid(currency.address, bidderWallet.address),
-        defaultTokenId
-      )
-    ).rejectedWith("SafeERC20: ERC20 operation did not succeed");
-  });
+    it("should revert if the bidder does not have a high enough allowance for their bidding currency", async () => {
+      const auction = market.connect(bidderWallet);
+      await expect(
+        setBid(
+          auction,
+          defaultBid(currency.address, bidderWallet.address),
+          defaultTokenId
+        )
+      ).rejectedWith("SafeERC20: ERC20 operation did not succeed");
+    });
 
-  it("should revert if the bidder does not have a high enough allowance for their native currency", async () => {
-    const auction = market.connect(bidderWallet);
+    it("should revert if the bidder does not have a high enough allowance for their native currency", async () => {
+      const auction = market.connect(bidderWallet);
 
-    const balance = await ethers.provider.getBalance(bidderWallet.address);
+      const balance = await ethers.provider.getBalance(bidderWallet.address);
 
-    await expect(
-      setNativeBid(
-        auction,
-        { ...defaultNativeBid(bidderWallet.address), amount: balance.add(1) },
-        defaultTokenId,
-        balance.add(1)
-      )
-    ).rejected;
-  });
+      await expect(
+        setNativeBid(
+          auction,
+          { ...defaultNativeBid(bidderWallet.address), amount: balance.add(1) },
+          defaultTokenId,
+          balance.add(1)
+        )
+      ).rejected;
+    });
 
-  it("should revert if the token bidder does not have the currentcy approved", async () => {
-    const marketBidder = market.connect(bidderWallet);
-    await expect(
-      marketBidder.setBid(
-        0,
-        defaultBid(currency.address, bidderWallet.address)
-      )
-    ).rejectedWith("SafeERC20: ERC20 operation did not succeed");
-  });
+    it("should revert if the token bidder does not have the currentcy approved", async () => {
+      const marketBidder = market.connect(bidderWallet);
+      await expect(
+        marketBidder.setBid(
+          0,
+          defaultBid(currency.address, bidderWallet.address)
+        )
+      ).rejectedWith("SafeERC20: ERC20 operation did not succeed");
+    });
 
-  it("should revert if the token bidder does not have a high enough balance for their bidding currency", async () => {
-    const marketBidder = market.connect(bidderWallet);
-    await approveCurrency(market.address, bidderWallet);
-    await expect(
-      marketBidder.setBid(
-        0,
-        defaultBid(currency.address, bidderWallet.address)
-      )
-    ).rejectedWith("SafeERC20: ERC20 operation did not succeed");
-  });
+    it("should revert if the token bidder does not have a high enough balance for their bidding currency", async () => {
+      const marketBidder = market.connect(bidderWallet);
+      await approveCurrency(market.address, bidderWallet);
+      await expect(
+        marketBidder.setBid(
+          0,
+          defaultBid(currency.address, bidderWallet.address)
+        )
+      ).rejectedWith("SafeERC20: ERC20 operation did not succeed");
+    });
 
-  it("should revert if the bidder does not have enough tokens to bid with", async () => {
-    const bid = defaultBid(currency.address, bidderWallet.address);
-    const auction = market.connect(bidderWallet);
-    await mintCurrency(bid.bidder, BigNumber.from(1000));
-    await approveCurrency(auction.address, bidderWallet);
+    it("should revert if the bidder does not have enough tokens to bid with", async () => {
+      const bid = defaultBid(currency.address, bidderWallet.address);
+      const auction = market.connect(bidderWallet);
+      await mintCurrency(bid.bidder, BigNumber.from(1000));
+      await approveCurrency(auction.address, bidderWallet);
 
-    await expect(setBid(auction, bid, defaultTokenId)).rejectedWith(
-      "SafeERC20: ERC20 operation did not succeed"
-    );
-  });
+      await expect(setBid(auction, bid, defaultTokenId)).rejectedWith(
+        "SafeERC20: ERC20 operation did not succeed"
+      );
+    });
 
-  it("should revert if the bid recipient is 0 address", async () => {
-    const auction = market.connect(bidderWallet);
-    const bid = defaultBid(currency.address, bidderWallet.address);
-    await mintCurrency(bid.bidder, bid.amount);
-    await approveCurrency(auction.address, bidderWallet);
+    it("should revert if the bid recipient is 0 address", async () => {
+      const auction = market.connect(bidderWallet);
+      const bid = defaultBid(currency.address, bidderWallet.address);
+      await mintCurrency(bid.bidder, bid.amount);
+      await approveCurrency(auction.address, bidderWallet);
 
-    await expect(
-      setBid(auction, { ...bid, recipient: AddressZero }, defaultTokenId)
-    ).rejectedWith("Market: bid recipient cannot be 0 address");
-  });
+      await expect(
+        setBid(auction, { ...bid, recipient: AddressZero }, defaultTokenId)
+      ).rejectedWith("Market: bid recipient cannot be 0 address");
+    });
 
-  it("should revert if the native bid recipient is 0 address", async () => {
-    const auction = market.connect(bidderWallet);
-    const bid = defaultNativeBid(bidderWallet.address);
+    it("should revert if the native bid recipient is 0 address", async () => {
+      const auction = market.connect(bidderWallet);
+      const bid = defaultNativeBid(bidderWallet.address);
 
-    await expect(
-      setNativeBid(
-        auction,
-        { ...bid, recipient: AddressZero },
-        defaultTokenId,
-        BigNumber.from(bid.amount)
-      )
-    ).rejectedWith("Market: bid recipient cannot be 0 address");
-  });
+      await expect(
+        setNativeBid(
+          auction,
+          { ...bid, recipient: AddressZero },
+          defaultTokenId,
+          BigNumber.from(bid.amount)
+        )
+      ).rejectedWith("Market: bid recipient cannot be 0 address");
+    });
 
-  it("should revert if the bidder bids 0 tokens", async () => {
-    const auction = market.connect(bidderWallet);
-    const bid = defaultBid(currency.address, bidderWallet.address);
-    await mintCurrency(bid.bidder, bid.amount);
-    await approveCurrency(auction.address, bidderWallet);
+    it("should revert if the bidder bids 0 tokens", async () => {
+      const auction = market.connect(bidderWallet);
+      const bid = defaultBid(currency.address, bidderWallet.address);
+      await mintCurrency(bid.bidder, bid.amount);
+      await approveCurrency(auction.address, bidderWallet);
 
-    await expect(
-      setBid(auction, { ...bid, amount: 0 }, defaultTokenId)
-    ).rejectedWith("Market: cannot bid amount of 0");
-  });
+      await expect(
+        setBid(auction, { ...bid, amount: 0 }, defaultTokenId)
+      ).rejectedWith("Market: cannot bid amount of 0");
+    });
 
     it("should revert if the bidder bids 0 native coins", async () => {
       const auction = market.connect(bidderWallet);
@@ -1350,52 +1505,60 @@ describe("MarketIntegration", () => {
     });
   });
 
-  describe('#removeBid', () => {
-
+  describe("#removeBid", () => {
     beforeEach(async () => {
       await deploy();
       await setupAuction(currency.address);
     });
 
-    it('should revert if the bidder has not placed a bid', async () => {
+    it("should revert if the bidder has not placed a bid", async () => {
       const nonBidderMarket = market.connect(nonBidderWallet);
 
       await expect(removeBid(nonBidderMarket, 0)).rejectedWith(
-        'Market: cannot remove bid amount of 0'
+        "Market: cannot remove bid amount of 0"
       );
     });
 
-    it('should revert if the tokenId has not yet ben created', async () => {
+    it("should revert if the tokenId has not yet ben created", async () => {
       const otherMarket = market.connect(otherWallet);
 
       await expect(removeBid(otherMarket, 100)).rejectedWith(
-        'Market: token with that id has not been created'
+        "Market: token with that id has not been created"
       );
     });
 
-    it('should remove a bid and refund the bidder', async () => {
+    it("should remove a bid and refund the bidder", async () => {
       const otherMarket = market.connect(otherWallet);
 
-      const beforeBalance = await currency.connect(otherWallet).balanceOf(otherAddress);
+      const beforeBalance = await currency
+        .connect(otherWallet)
+        .balanceOf(otherAddress);
 
-      const otherBid = await otherMarket.bidForTokenBidder(0, otherWallet.address);
+      const otherBid = await otherMarket.bidForTokenBidder(
+        0,
+        otherWallet.address
+      );
 
       await expect(removeBid(otherMarket, 0)).fulfilled;
-      const afterBalance = await currency.connect(otherWallet).balanceOf(otherAddress);;
+      const afterBalance = await currency
+        .connect(otherWallet)
+        .balanceOf(otherAddress);
 
-      expect(smallify(afterBalance.sub(beforeBalance))).eq(smallify(otherBid.amount));
+      expect(smallify(afterBalance.sub(beforeBalance))).eq(
+        smallify(otherBid.amount)
+      );
     });
 
-    it('should not be able to remove a bid twice', async () => {
+    it("should not be able to remove a bid twice", async () => {
       const otherMarket = market.connect(otherWallet);
       await removeBid(otherMarket, 0);
 
       await expect(removeBid(otherMarket, 0)).rejectedWith(
-        'Market: cannot remove bid amount of 0'
+        "Market: cannot remove bid amount of 0"
       );
     });
 
-    it('should remove a bid, even if the token is burned', async () => {
+    it("should remove a bid, even if the token is burned", async () => {
       const asOwner = media.connect(ownerWallet);
       const asCreator = media.connect(creatorWallet);
       const marketOther = market.connect(otherWallet);
@@ -1404,12 +1567,18 @@ describe("MarketIntegration", () => {
 
       await asCreator.burn(0);
 
-      const beforeBalance = await currency.connect(otherWallet).balanceOf(otherAddress);
+      const beforeBalance = await currency
+        .connect(otherWallet)
+        .balanceOf(otherAddress);
 
       await expect(marketOther.removeBid(0)).fulfilled;
 
-      const afterBalance = await currency.connect(otherWallet).balanceOf(otherAddress);
-      expect(smallify(afterBalance.sub(beforeBalance))).eq(smallify(defaultBid(currency.address, otherAddress).amount));
+      const afterBalance = await currency
+        .connect(otherWallet)
+        .balanceOf(otherAddress);
+      expect(smallify(afterBalance.sub(beforeBalance))).eq(
+        smallify(defaultBid(currency.address, otherAddress).amount)
+      );
     });
   });
 
@@ -1486,16 +1655,14 @@ describe("MarketIntegration", () => {
     it("should remove a bid, even if the token is burned", async () => {
       const marketCreator = media.connect(creatorWallet);
       const marketOther = market.connect(otherWallet);
-      
+
       const bid = defaultNativeBid(otherAddress);
 
-      await expect(marketOther.setBid(
-        0,
-        bid,
-        {
+      await expect(
+        marketOther.setBid(0, bid, {
           value: bid.amount,
-        }
-      )).eventually.fulfilled;
+        })
+      ).eventually.fulfilled;
 
       await marketCreator.burn(0);
       const beforeBalance = await ethers.provider.getBalance(
