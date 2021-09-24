@@ -279,6 +279,7 @@ describe("MarketIntegration", () => {
     await market.configureEnforcePlatformCuts(true);
 
     await media.configure(market.address, maxEditionOf);
+    await media.configureMintAddress(mintAddress);
 
     currency = await deployCurrency();
 

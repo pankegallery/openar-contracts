@@ -78,6 +78,7 @@ describe("Market", () => {
     await market.configureEnforcePlatformCuts(true);
 
     await media.configure(market.address, maxEditionOf);
+    await media.configureMintAddress(mintAddress);
   }
 
   async function setWallets() {
@@ -203,29 +204,6 @@ describe("Market", () => {
     });
   });
 
-  describe('#configureMintAddress', () => {
-    beforeEach(async () => {
-      await deploy();
-    });
-
-    it('should revert if not called by the owner', async () => {
-      await expect(
-        market.connect(otherWallet).configureMintAddress(
-          platformWallet.address
-        )
-      ).eventually.rejectedWith('Ownable: caller is not the owner');
-    });
-
-    it('should be callable by the owner', async () => {
-      await expect(
-        market.connect(deployerWallet).configureMintAddress(
-          nonBidderWallet.address
-        )
-      ).eventually.fulfilled;
-
-      expect(await market.openARMint()).eq(nonBidderWallet.address);
-    });
-  });
 
   describe('#configurePlatformCuts', () => {
     beforeEach(async () => {

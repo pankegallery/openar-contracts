@@ -95,8 +95,6 @@ interface IMarket {
         pure
         returns (uint256);
 
-    function mintAddress() external view returns (address);
-
     function configure(address mediaContractAddress) external;
 
     function configurePlatformAddress(
@@ -105,10 +103,6 @@ interface IMarket {
 
     function configurePoolAddress(
         address poolAddress
-    ) external;
-
-    function configureMintAddress(
-        address mintAddress
     ) external;
 
     function configurePlatformCuts(PlatformCuts calldata pCuts) external;

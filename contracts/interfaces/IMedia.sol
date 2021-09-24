@@ -140,6 +140,10 @@ interface IMedia {
      */
     function configure(address marketContractAddress, uint256 maxArObjectEditionOf) external;
 
+    function configureMintAddress(
+        address mintAddress
+    ) external;
+
     function creatorBalanceOf(address creator) external view returns (uint256);
 
     function tokenOfCreatorByIndex(address creator, uint256 index)

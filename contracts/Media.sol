@@ -30,7 +30,7 @@ import "./interfaces/IMedia.sol";
 contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
     using Counters for Counters.Counter;
     using SafeMath for uint256;
-
+    
     /* *******
      * Globals
      * *******
@@ -43,6 +43,9 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
     // Address for the market
     address public marketContract;
 
+    // Address that can run mintArObject
+    address public openARMint;
+    
     // Mapping from token to previous owner of the token
     mapping(uint256 => address) public previousTokenOwners;
 
@@ -181,7 +184,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
      */
     modifier onlyMintAddressOrOwner() {
         require(
-           _msgSender() == IMarket(marketContract).mintAddress() ||  _msgSender() == _owner,
+           _msgSender() == openARMint ||  _msgSender() == _owner,
             "Media: Only mint caller, or owner"
         );
         _;
@@ -585,6 +588,22 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         );
         marketContract = marketContractAddr;
         maxEditionOf = maxArObjectEditionOf;
+    }
+
+     /**
+     * @notice Sets the OpenAR pool wallett address. This wallet will receive the pool share of any sales
+     */
+    function configureMintAddress(address openARMintAddress)
+        external
+        override
+        onlyOwner
+    {
+        require(
+            openARMintAddress != address(0),
+            "Market: cannot set mint wallet address as zero address"
+        );
+
+        openARMint = openARMintAddress;
     }
 
     /**

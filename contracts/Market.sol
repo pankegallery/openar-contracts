@@ -44,8 +44,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
     address public mediaContract;
     address public openARPlatform;
     address public openARPool;
-    address public openARMint;
-
+    
     bool public enforcePlatformCuts = true;
     PlatformCuts public platformCuts;
 
@@ -156,15 +155,6 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         returns (BidShares memory)
     {
         return _bidShares[tokenId];
-    }
-
-    function mintAddress()
-        public
-        view
-        override
-        returns (address)
-    {
-        return openARMint;
     }
 
     /**
@@ -627,23 +617,6 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         );
 
         openARPool = openARPoolAddress;
-    }
-
-    /**
-     * @notice Sets the OpenAR pool wallett address. This wallet will receive the pool share of any sales
-     */
-    function configureMintAddress(address openARMintAddress)
-        external
-        override
-        onlyOwner
-        whenNotPaused
-    {
-        require(
-            openARMintAddress != address(0),
-            "Market: cannot set mint wallet address as zero address"
-        );
-
-        openARMint = openARMintAddress;
     }
 
     /**

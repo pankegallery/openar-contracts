@@ -196,12 +196,12 @@ describe("Media", () => {
     await market.configure(media.address);
     await market.configurePlatformAddress(platformAddress);
     await market.configurePoolAddress(poolAddress);
-    await market.configureMintAddress(mintAddress);
     await market.configurePlatformCuts(platformCuts);
     await market.configureEnforcePlatformCuts(true);
 
     await media.configure(market.address, maxEditionOf);
-
+    await media.configureMintAddress(mintAddress);
+    
     currency = await deployCurrency();
 
     defaultAsk = {
@@ -258,7 +258,7 @@ describe("Media", () => {
   async function mintCurrency(to: string, value: BigNumber) {
     await currency.connect(deployerWallet).mint(to, value);
   } 
-  
+
   const defaultNativeBid = (bidder: string, recipient?: string) => ({
     amount: ONE_ETH,
     currency: AddressZero,
@@ -407,6 +407,31 @@ describe("Media", () => {
         .marketContract();
 
       expect(marketContractAddress).eq(market.address);
+    });
+  });
+
+
+  describe('#configureMintAddress', () => {
+    beforeEach(async () => {
+      await deploy();
+    });
+
+    it('should revert if not called by the owner', async () => {
+      await expect(
+        media.connect(otherWallet).configureMintAddress(
+          platformWallet.address
+        )
+      ).eventually.rejectedWith('Ownable: caller is not the owner');
+    });
+
+    it('should be callable by the owner', async () => {
+      await expect(
+        media.connect(deployerWallet).configureMintAddress(
+          nonBidderWallet.address
+        )
+      ).eventually.fulfilled;
+
+      expect(await media.openARMint()).eq(nonBidderWallet.address);
     });
   });
 
