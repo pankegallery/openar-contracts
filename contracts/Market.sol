@@ -44,6 +44,8 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
     address public mediaContract;
     address public openARPlatform;
     address public openARPool;
+    address public openARMint;
+
     bool public enforcePlatformCuts = true;
     PlatformCuts public platformCuts;
 
@@ -70,10 +72,10 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
      */
 
     /**
-     * @notice require that the msg.sender is the configured media contract
+     * @notice require that the _msgSender() is the configured media contract
      */
     modifier onlyMediaCaller() {
-        require(mediaContract == msg.sender, "Market: Only media contract");
+        require(mediaContract == _msgSender(), "Market: Only media contract");
         _;
     }
 
@@ -154,6 +156,15 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         returns (BidShares memory)
     {
         return _bidShares[tokenId];
+    }
+
+    function mintAddress()
+        public
+        view
+        override
+        returns (address)
+    {
+        return openARMint;
     }
 
     /**
@@ -268,7 +279,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         public
         override
         whenNotPaused
-        tokenOnlyApprovedOrOwner(msg.sender, tokenId)
+        tokenOnlyApprovedOrOwner(_msgSender(), tokenId)
     {
         _setAsk(tokenId, ask);
     }
@@ -291,20 +302,13 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
      */
     function setAskForBatch(
         uint256[] memory tokenIds,
-        IMarket.Ask memory ask,
-        bytes32 objKeyHex
+        Ask memory ask
     ) public override whenNotPaused nonReentrant {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(
-                Media(mediaContract).isApprovedOrOwner(msg.sender, tokenIds[i]),
+                Media(mediaContract).isApprovedOrOwner(_msgSender(), tokenIds[i]),
                 "Market: setAskForBatch Only approved or owner"
-            );
-            (, bytes32 oKH, , ) =
-                Media(mediaContract).tokenMediaData(tokenIds[i]);
-            require(
-                oKH == objKeyHex,
-                "Market: setAskForBatch only specified objKeyHex"
-            );
+            );            
         }
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -322,7 +326,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(
-                Media(mediaContract).isApprovedOrOwner(msg.sender, tokenIds[i]),
+                Media(mediaContract).isApprovedOrOwner(_msgSender(), tokenIds[i]),
                 "Market: removeAskForBatch Only approved or owner"
             );
         }
@@ -339,7 +343,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         external
         override
         whenNotPaused
-        onlyMediaCallerOrApprovedOrOwner(msg.sender, tokenId)
+        onlyMediaCallerOrApprovedOrOwner(_msgSender(), tokenId)
     {
         _removeAsk(tokenId);
     }
@@ -357,7 +361,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         tokeOnlyCreated(tokenId)
     {
         require(
-            bid.bidder == msg.sender,
+            bid.bidder == _msgSender(),
             "Market: bidder needs to be message sender"
         );
         require(bid.bidder != address(0), "Market: bidder cannot be 0 address");
@@ -432,7 +436,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         whenNotPaused
         tokeOnlyCreated(tokenId)
     {
-        _removeBid(msg.sender, tokenId);
+        _removeBid(_msgSender(), tokenId);
     }
 
     /**
@@ -450,7 +454,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         override
         whenNotPaused
         tokeOnlyCreated(tokenId)
-        tokenOnlyApprovedOrOwner(msg.sender, tokenId)
+        tokenOnlyApprovedOrOwner(_msgSender(), tokenId)
     {
         Bid memory bid = _tokenBidders[tokenId][expectedBid.bidder];
         require(bid.amount > 0, "Market: cannot accept bid of 0");
@@ -628,6 +632,23 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
     /**
      * @notice Sets the OpenAR pool wallett address. This wallet will receive the pool share of any sales
      */
+    function configureMintAddress(address openARMintAddress)
+        external
+        override
+        onlyOwner
+        whenNotPaused
+    {
+        require(
+            openARMintAddress != address(0),
+            "Market: cannot set mint wallet address as zero address"
+        );
+
+        openARMint = openARMintAddress;
+    }
+
+    /**
+     * @notice Sets the OpenAR pool wallett address. This wallet will receive the pool share of any sales
+     */
     function configurePlatformCuts(PlatformCuts memory pCuts)
         public
         override
@@ -699,9 +720,9 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
         _paused = flag;
 
         if (flag) {
-            emit Unpaused(msg.sender);
+            emit Unpaused(_msgSender());
         } else {
-            emit Paused(msg.sender);
+            emit Paused(_msgSender());
         }
 
         return _paused;
@@ -731,7 +752,7 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
             // full amount to the market, resulting in potentally locked funds
             IERC20 token = IERC20(currency);
             uint256 beforeBalance = token.balanceOf(address(this));
-            token.safeTransferFrom(msg.sender, address(this), amount);
+            token.safeTransferFrom(_msgSender(), address(this), amount);
             uint256 afterBalance = token.balanceOf(address(this));
             require(
                 beforeBalance.add(amount) == afterBalance,

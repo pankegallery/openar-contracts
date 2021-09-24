@@ -140,6 +140,12 @@ async function main() {
   txReceipt = await provider.getTransactionReceipt(tx.hash);
   console.log("Gas usage: ", txReceipt.gasUsed.toNumber());
 
+  tx = await market.configureMintAddress(`0x${process.env.ETH_ADDRESS_MINT}`);
+  console.log(`Market configureMintAddress() tx: ${tx.hash}`);
+  await tx.wait();
+  txReceipt = await provider.getTransactionReceipt(tx.hash);
+  console.log("Gas usage: ", txReceipt.gasUsed.toNumber());
+
   tx = await market.configurePlatformCuts(platformCuts);
   console.log(`Market configurePlatformCuts() tx: ${tx.hash}`);
   await tx.wait();
@@ -156,7 +162,7 @@ async function main() {
 
   console.log("Configuring Media...");
 
-  tx = await media.configure(addressBook.market);
+  tx = await media.configure(addressBook.market, 100);
   console.log(`Media configure() tx: ${tx.hash}`);
   await tx.wait();
   txReceipt = await provider.getTransactionReceipt(tx.hash);

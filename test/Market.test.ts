@@ -23,6 +23,8 @@ chai.use(asPromised);
 // helper function so we can parse numbers and do approximate number calculations, to avoid annoying gas calculations
 const smallify = (bn: BigNumber) => bn.div(THOUSANDTH_ETH).toNumber();
 
+const maxEditionOf = 100;
+
 describe("Market", () => {
   let market: Market;
   let media: Media;
@@ -36,7 +38,8 @@ describe("Market", () => {
     poolWallet,
     creatorWallet,
     nonBidderWallet,
-    ownerWallet: Wallet;
+    ownerWallet,
+    mintWallet: Wallet;
   let deployerAddress,
     bidderAddress,
     prevOwnerAddress,
@@ -45,7 +48,8 @@ describe("Market", () => {
     poolAddress,
     creatorAddress,
     nonBidderAddress,
-    ownerAddress: string;
+    ownerAddress,
+    mintAddress: string;
 
   let platformCuts: PlatformCuts = {
     firstSalePlatform: Decimal.new(10),
@@ -73,7 +77,7 @@ describe("Market", () => {
     await market.configurePlatformCuts(platformCuts);
     await market.configureEnforcePlatformCuts(true);
 
-    await media.configure(market.address);
+    await media.configure(market.address, maxEditionOf);
   }
 
   async function setWallets() {
@@ -87,6 +91,7 @@ describe("Market", () => {
       creatorWallet,
       nonBidderWallet,
       ownerWallet,
+      mintWallet
     ] = generateWallets(ethers.provider);
 
     [
@@ -99,6 +104,7 @@ describe("Market", () => {
       creatorAddress,
       nonBidderAddress,
       ownerAddress,
+      mintAddress
     ] = await Promise.all(
       [
         deployerWallet,
@@ -110,6 +116,7 @@ describe("Market", () => {
         creatorWallet,
         nonBidderWallet,
         ownerWallet,
+        mintWallet
       ].map((s) => s.getAddress())
     );
   }
@@ -193,6 +200,30 @@ describe("Market", () => {
       ).eventually.fulfilled;
 
       expect(await market.openARPool()).eq(nonBidderWallet.address);
+    });
+  });
+
+  describe('#configureMintAddress', () => {
+    beforeEach(async () => {
+      await deploy();
+    });
+
+    it('should revert if not called by the owner', async () => {
+      await expect(
+        market.connect(otherWallet).configureMintAddress(
+          platformWallet.address
+        )
+      ).eventually.rejectedWith('Ownable: caller is not the owner');
+    });
+
+    it('should be callable by the owner', async () => {
+      await expect(
+        market.connect(deployerWallet).configureMintAddress(
+          nonBidderWallet.address
+        )
+      ).eventually.fulfilled;
+
+      expect(await market.openARMint()).eq(nonBidderWallet.address);
     });
   });
 

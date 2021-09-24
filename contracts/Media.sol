@@ -35,6 +35,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
      * Globals
      * *******
      */
+    uint256 maxEditionOf;
 
     // Deployment Address
     address private _owner;
@@ -176,13 +177,24 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
     }
 
     /**
+     * @notice Ensure that function is only called my configured mint address or contract owner
+     */
+    modifier onlyMintAddressOrOwner() {
+        require(
+           _msgSender() == IMarket(marketContract).mintAddress() ||  _msgSender() == _owner,
+            "Media: Only mint caller, or owner"
+        );
+        _;
+    }
+
+    /**
      * @notice On deployment, set the market contract address and register the
      * ERC721 metadata interface
      * @dev In case you change the name, also change it in _calculateDomainSeparator() at the very bottom
      */
     constructor() public ERC721("openAR", "OPENAR") {
         _owner = _msgSender();
-
+        maxEditionOf = 100;
         // _setOwner(_msgSender());
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
     }
@@ -301,10 +313,15 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         MintArObjectData memory data,
         IMarket.BidShares memory bidShares,
         EIP712Signature memory sig
-    ) public override onlyOwner nonReentrant {
+    ) public override onlyMintAddressOrOwner nonReentrant {
         require(
             sig.deadline == 0 || sig.deadline >= block.timestamp,
             "Media: mintArObject expired"
+        );
+
+        require(
+            data.editionOf <= maxEditionOf,
+            "Media: editionOf > maxEditionOf"
         );
 
         require(
@@ -441,7 +458,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         );
         
         uint256[] memory tokenIds = new uint256[](1);
-        tokenIds[0] = _mintForCreator(msg.sender, data, bidShares);
+        tokenIds[0] = _mintForCreator(_msgSender(), data, bidShares);
 
         emit TokenObjectMinted(tokenIds, MintObjectData(
             data.awKeyHex,
@@ -529,7 +546,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         external
         override
     {
-        require(msg.sender == marketContract, "Media: only market contract");
+        require(_msgSender() == marketContract, "Media: only market contract");
         previousTokenOwners[tokenId] = ownerOf(tokenId);
 
         _safeTransfer(ownerOf(tokenId), recipient, tokenId, "");
@@ -544,7 +561,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         override
         nonReentrant
         onlyExistingToken(tokenId)
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyApprovedOrOwner(_msgSender(), tokenId)
     {
         address owner = ownerOf(tokenId);
 
@@ -561,13 +578,13 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
      * can call the mutable functions. This method can only be called once.
      * @dev OpenAR: We moved this from the constructor to a configurabe function.
      */
-    function configure(address marketContractAddr) external override onlyOwner {
+    function configure(address marketContractAddr, uint256 maxArObjectEditionOf) external override onlyOwner {
         require(
             marketContractAddr != address(0),
             "Media: cannot set media contract as zero address"
         );
-
         marketContract = marketContractAddr;
+        maxEditionOf = maxArObjectEditionOf;
     }
 
     /**
@@ -578,7 +595,7 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
      */
     function revokeApproval(uint256 tokenId) external override nonReentrant {
         require(
-            msg.sender == getApproved(tokenId),
+            _msgSender() == getApproved(tokenId),
             "Media: caller not approved address"
         );
         _approve(address(0), tokenId);
@@ -592,12 +609,12 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         external
         override
         nonReentrant
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyApprovedOrOwner(_msgSender(), tokenId)
         onlyTokenWithContentHash(tokenId)
         onlyValidURI(tokenURI)
     {
         _setTokenURI(tokenId, tokenURI);
-        emit TokenURIUpdated(tokenId, msg.sender, tokenURI);
+        emit TokenURIUpdated(tokenId, _msgSender(), tokenURI);
     }
 
     /**
@@ -611,12 +628,12 @@ contract Media is IMedia, ERC721Burnable, ReentrancyGuard, Ownable {
         external
         override
         nonReentrant
-        onlyApprovedOrOwner(msg.sender, tokenId)
+        onlyApprovedOrOwner(_msgSender(), tokenId)
         onlyTokenWithMetadataHash(tokenId)
         onlyValidURI(metadataURI)
     {
         _setTokenMetadataURI(tokenId, metadataURI);
-        emit TokenMetadataURIUpdated(tokenId, msg.sender, metadataURI);
+        emit TokenMetadataURIUpdated(tokenId, _msgSender(), metadataURI);
     }
 
     /**

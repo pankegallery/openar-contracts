@@ -144,6 +144,8 @@ let defaultAsk = {
 // helper function so we can parse numbers and do approximate number calculations, to avoid annoying gas calculations
 const smallify = (bn: BigNumber) => bn.div(THOUSANDTH_ETH).toNumber();
 
+const maxEditionOf = 100;
+
 describe("Media", () => {
   let market: Market;
   let media: Media;
@@ -158,7 +160,8 @@ describe("Media", () => {
     poolWallet,
     creatorWallet,
     nonBidderWallet,
-    ownerWallet: Wallet;
+    ownerWallet,
+    mintWallet: Wallet;
   let deployerAddress,
     bidderAddress,
     prevOwnerAddress,
@@ -167,7 +170,8 @@ describe("Media", () => {
     poolAddress,
     creatorAddress,
     nonBidderAddress,
-    ownerAddress: string;
+    ownerAddress,
+    mintAddress: string;
 
   let platformCuts: PlatformCuts = {
     firstSalePlatform: Decimal.new(10),
@@ -192,10 +196,11 @@ describe("Media", () => {
     await market.configure(media.address);
     await market.configurePlatformAddress(platformAddress);
     await market.configurePoolAddress(poolAddress);
+    await market.configureMintAddress(mintAddress);
     await market.configurePlatformCuts(platformCuts);
     await market.configureEnforcePlatformCuts(true);
 
-    await media.configure(market.address);
+    await media.configure(market.address, maxEditionOf);
 
     currency = await deployCurrency();
 
@@ -216,11 +221,10 @@ describe("Media", () => {
       creatorWallet,
       nonBidderWallet,
       ownerWallet,
+      mintWallet,
     ] = generateWallets(ethers.provider);
 
     [
-
-
       deployerAddress,
       bidderAddress,
       prevOwnerAddress,
@@ -230,6 +234,7 @@ describe("Media", () => {
       creatorAddress,
       nonBidderAddress,
       ownerAddress,
+      mintAddress,
     ] = await Promise.all(
       [
         deployerWallet,
@@ -241,6 +246,7 @@ describe("Media", () => {
         creatorWallet,
         nonBidderWallet,
         ownerWallet,
+        mintWallet,
       ].map((s) => s.getAddress())
     );
   }
@@ -251,8 +257,8 @@ describe("Media", () => {
 
   async function mintCurrency(to: string, value: BigNumber) {
     await currency.connect(deployerWallet).mint(to, value);
-  }
-
+  } 
+  
   const defaultNativeBid = (bidder: string, recipient?: string) => ({
     amount: ONE_ETH,
     currency: AddressZero,
@@ -277,13 +283,8 @@ describe("Media", () => {
     return market.removeAsk(tokenId);
   }
 
-  async function setAskForBatch(
-    market: Market,
-    tokenIds: number[],
-    objKeyHex: Bytes,
-    ask: Ask
-  ) {
-    return market.setAskForBatch(tokenIds, ask, objKeyHex);
+  async function setAskForBatch(market: Market, tokenIds: number[], ask: Ask) {
+    return market.setAskForBatch(tokenIds, ask);
   }
 
   async function removeAskForBatch(market: Market, tokenIds: number[]) {
@@ -393,12 +394,12 @@ describe("Media", () => {
 
     it("should revert if not called by the owner", async () => {
       await expect(
-        media.connect(otherWallet).configure(market.address)
+        media.connect(otherWallet).configure(market.address, maxEditionOf)
       ).eventually.rejectedWith("Ownable: caller is not the owner");
     });
 
     it("should be callable by the owner", async () => {
-      await expect(media.connect(deployerWallet).configure(market.address))
+      await expect(media.connect(deployerWallet).configure(market.address, maxEditionOf))
         .eventually.fulfilled;
 
       const marketContractAddress = await media
@@ -419,7 +420,7 @@ describe("Media", () => {
         .fulfilled;
 
       await expect(
-        media.connect(deployerWallet).configure(market.address)
+        media.connect(deployerWallet).configure(market.address, maxEditionOf)
       ).eventually.rejectedWith("Ownable: caller is not the owner");
     });
 
@@ -428,7 +429,7 @@ describe("Media", () => {
         media.connect(deployerWallet).transferOwnership(otherWallet.address)
       ).eventually.fulfilled;
 
-      await expect(media.connect(otherWallet).configure(market.address))
+      await expect(media.connect(otherWallet).configure(market.address, maxEditionOf))
         .eventually.fulfilled;
     });
   });
@@ -1824,7 +1825,7 @@ describe("Media", () => {
     });
 
     it("should mint an ArObject as editon of 1 token for a given creator with a valid signature and no initial ask", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -1838,7 +1839,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();
@@ -1876,7 +1877,7 @@ describe("Media", () => {
     });
 
     it("should mint an ArObject as editon of 1 token for a given creator with a valid signature and a very high initial ask", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -1890,7 +1891,7 @@ describe("Media", () => {
         true,
         Decimal.new(22222),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();
@@ -1927,9 +1928,8 @@ describe("Media", () => {
       expect(tokenCount1 + 1).to.eq(tokenCount2);
     });
 
-
     it("should mint several different ArObject as editon of 1 token for a given creator with a valid signature and an initial ask", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -1943,7 +1943,7 @@ describe("Media", () => {
         true,
         Decimal.new(222),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();
@@ -1985,7 +1985,7 @@ describe("Media", () => {
         true,
         Decimal.new(333),
         BigNumber.from(timestamp + 200),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2014,7 +2014,7 @@ describe("Media", () => {
           sig2
         )
       ).fulfilled;
-      
+
       const sig3 = await signMintArObject(
         media,
         creatorWallet,
@@ -2025,7 +2025,7 @@ describe("Media", () => {
         true,
         Decimal.new(44),
         BigNumber.from(timestamp + 400),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2061,7 +2061,7 @@ describe("Media", () => {
     });
 
     it("should emit a correct TokenObjectMinted event", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
       const timestamp = new Date().getTime();
 
       const sig = await signMintArObject(
@@ -2074,7 +2074,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const block = await ethers.provider.getBlockNumber();
@@ -2124,7 +2124,7 @@ describe("Media", () => {
     });
 
     it("should emit a correct TokenObjectMinted event when batch minting", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
       const timestamp = new Date().getTime();
 
       const sig = await signMintArObject(
@@ -2137,7 +2137,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const block = await ethers.provider.getBlockNumber();
@@ -2200,11 +2200,11 @@ describe("Media", () => {
       expect(logDescription.args.data.editionOf).to.eq(BigNumber.from(3));
     });
 
-    it("should batch mint 100 tokens", async () => {
-      const token = media.connect(deployerWallet);
+    it("should batch mint 100 (maxEditionOf) tokens", async () => {
+      const token = media.connect(mintWallet);
       const timestamp = new Date().getTime();
 
-      const max = 100;
+      const max = maxEditionOf;
 
       const sig = await signMintArObject(
         media,
@@ -2216,7 +2216,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();
@@ -2256,8 +2256,59 @@ describe("Media", () => {
       expect(tokenCount1 + max).to.eq(tokenCount2);
     });
 
+    it("should not batch mint 101 (maxEditionOf + 1) tokens", async () => {
+      const token = media.connect(mintWallet);
+      const timestamp = new Date().getTime();
+
+      const max = maxEditionOf + 1;
+
+      const sig = await signMintArObject(
+        media,
+        creatorWallet,
+        token.address,
+        awKeyHash,
+        objKeyHash,
+        BigNumber.from(max),
+        false,
+        Decimal.new(0),
+        BigNumber.from(timestamp),
+        await mintWallet.getChainId()
+      );
+
+      await expect(
+        mintArObjectWithSig(
+          defaultBatchSize,
+          token,
+          creatorWallet.address,
+          [...Array(max).keys()].map((i) => tokenURI),
+          [...Array(max).keys()].map((i) => metadataURI),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`content hash ${i + 1}`)
+          ),
+          [...Array(max).keys()].map((i) =>
+            getBytes32FromString(`metadata hash ${i + 1}`)
+          ),
+          awKeyHexBytes,
+          objKeyHexBytes,
+          BigNumber.from(max),
+          false,
+          Decimal.new(0),
+          BigNumber.from(timestamp),
+          currency.address,
+          {
+            prevOwner: Decimal.new(0),
+            owner: Decimal.new(0),
+            creator: Decimal.new(85),
+            platform: Decimal.new(10),
+            pool: Decimal.new(5),
+          },
+          sig
+        )
+      ).rejectedWith("Media: editionOf > maxEditionOf");
+    });
+
     it("should correctly set MintData", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2271,7 +2322,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();
@@ -2336,7 +2387,7 @@ describe("Media", () => {
     });
 
     it("should not allow to use signature several times", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2350,7 +2401,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2409,7 +2460,7 @@ describe("Media", () => {
     });
 
     it("should not be able to mint the same arObject twice", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2423,7 +2474,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2465,7 +2516,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp2),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2497,7 +2548,7 @@ describe("Media", () => {
     });
 
     it("should ensure that all arrays have the same length", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2511,7 +2562,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2648,7 +2699,7 @@ describe("Media", () => {
     });
 
     it("should only mint if edition size and length of data arrays match", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2662,7 +2713,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2702,7 +2753,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2742,7 +2793,7 @@ describe("Media", () => {
     });
 
     it("should mint an ArObject as editon of 3 token for a given creator with a valid signature and no initial ask", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2756,7 +2807,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();
@@ -2816,7 +2867,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2844,11 +2895,11 @@ describe("Media", () => {
           },
           sig
         )
-      ).rejectedWith("Ownable: caller is not the owner");
+      ).rejectedWith("Media: Only mint caller, or owner");
     });
 
     it("should not of signer and passed on creator are different", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2862,7 +2913,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2894,7 +2945,7 @@ describe("Media", () => {
     });
 
     it("should not mint for a differnt key hash", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2916,7 +2967,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2948,7 +2999,7 @@ describe("Media", () => {
     });
 
     it("should not mint a different edition size", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -2962,7 +3013,7 @@ describe("Media", () => {
         false,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -2994,7 +3045,7 @@ describe("Media", () => {
     });
 
     it("should not mint if flag setInitialAsk differ", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -3008,7 +3059,7 @@ describe("Media", () => {
         true,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -3040,7 +3091,7 @@ describe("Media", () => {
     });
 
     it("should not mint if flag setInitialAsk is set and initialAsk-ing price == 0", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
       const timestamp = new Date().getTime();
 
       const sig = await signMintArObject(
@@ -3053,7 +3104,7 @@ describe("Media", () => {
         true,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -3085,7 +3136,7 @@ describe("Media", () => {
     });
 
     it("should not mint if initialAsk-ing prices differs", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
 
       const timestamp = new Date().getTime();
 
@@ -3099,7 +3150,7 @@ describe("Media", () => {
         true,
         Decimal.new(0),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       await expect(
@@ -3131,7 +3182,7 @@ describe("Media", () => {
     });
 
     it("should set initial ask correctly if flag is true and initialAsk > 0", async () => {
-      const token = media.connect(deployerWallet);
+      const token = media.connect(mintWallet);
       const deployerMarket = market.connect(otherWallet);
 
       const timestamp = new Date().getTime();
@@ -3146,7 +3197,7 @@ describe("Media", () => {
         true,
         Decimal.new(10),
         BigNumber.from(timestamp),
-        await deployerWallet.getChainId()
+        await mintWallet.getChainId()
       );
 
       const tokenCount1 = (await token.totalSupply()).toNumber();

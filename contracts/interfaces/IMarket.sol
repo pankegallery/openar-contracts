@@ -95,6 +95,8 @@ interface IMarket {
         pure
         returns (uint256);
 
+    function mintAddress() external view returns (address);
+
     function configure(address mediaContractAddress) external;
 
     function configurePlatformAddress(
@@ -103,6 +105,10 @@ interface IMarket {
 
     function configurePoolAddress(
         address poolAddress
+    ) external;
+
+    function configureMintAddress(
+        address mintAddress
     ) external;
 
     function configurePlatformCuts(PlatformCuts calldata pCuts) external;
@@ -126,7 +132,7 @@ interface IMarket {
     /**
      * @notice Set the ask for a batch of NFTs of one arObject
      */
-    function setAskForBatch(uint256[] calldata tokenIds, Ask calldata ask, bytes32 objKeyHex) external;
+    function setAskForBatch(uint256[] calldata tokenIds, Ask calldata ask) external;
 
     /**
      *  @notice Removes the ask for a batch of NFTs of one arObject
@@ -155,4 +161,5 @@ interface IMarket {
 
     function acceptBid(uint256 tokenId, Bid calldata bid) external;
 
+    
 }

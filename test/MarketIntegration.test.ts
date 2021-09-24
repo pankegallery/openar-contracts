@@ -132,6 +132,8 @@ justAnotherContentHashBytes = ethers.utils.arrayify(justAnotherContentHash);
 
 zeroContentHashBytes = ethers.utils.arrayify(ethers.constants.HashZero);
 
+const maxEditionOf = 100;
+
 const defaultBid = (currency: string, bidder: string, recipient?: string) => ({
   amount: ONE_ETH,
   currency,
@@ -163,7 +165,8 @@ describe("MarketIntegration", () => {
     poolWallet,
     creatorWallet,
     nonBidderWallet,
-    ownerWallet: Wallet;
+    ownerWallet,
+    mintWallet: Wallet;
   let deployerAddress,
     bidderAddress,
     prevOwnerAddress,
@@ -172,7 +175,8 @@ describe("MarketIntegration", () => {
     poolAddress,
     creatorAddress,
     nonBidderAddress,
-    ownerAddress: string;
+    ownerAddress,
+    mintAddress: string;
 
   let platformCuts: PlatformCuts = {
     firstSalePlatform: Decimal.new(10),
@@ -225,10 +229,9 @@ describe("MarketIntegration", () => {
   async function setAskForBatch(
     market: Market,
     tokenIds: number[],
-    objKeyHex: Bytes,
     ask: Ask
   ) {
-    return market.setAskForBatch(tokenIds, ask, objKeyHex);
+    return market.setAskForBatch(tokenIds, ask);
   }
 
   async function removeAskForBatch(market: Market, tokenIds: number[]) {
@@ -275,7 +278,7 @@ describe("MarketIntegration", () => {
     await market.configurePlatformCuts(platformCuts);
     await market.configureEnforcePlatformCuts(true);
 
-    await media.configure(market.address);
+    await media.configure(market.address, maxEditionOf);
 
     currency = await deployCurrency();
 
@@ -363,6 +366,7 @@ describe("MarketIntegration", () => {
       creatorWallet,
       nonBidderWallet,
       ownerWallet,
+      mintWallet,
     ] = generateWallets(ethers.provider);
 
     [
@@ -375,6 +379,7 @@ describe("MarketIntegration", () => {
       creatorAddress,
       nonBidderAddress,
       ownerAddress,
+      mintAddress,
     ] = await Promise.all(
       [
         deployerWallet,
@@ -386,6 +391,7 @@ describe("MarketIntegration", () => {
         creatorWallet,
         nonBidderWallet,
         ownerWallet,
+        mintWallet,
       ].map((s) => s.getAddress())
     );
   }
@@ -608,32 +614,25 @@ describe("MarketIntegration", () => {
     it("should set the asks for one token", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
-        setAskForBatch(creatorMarket, [0], objKeyHexBytes, defaultAsk)
+        setAskForBatch(creatorMarket, [0], defaultAsk)
       ).fulfilled;
     });
 
     it("should set the asks for multiple token", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
-        setAskForBatch(creatorMarket, [0, 1], objKeyHexBytes, defaultAsk)
+        setAskForBatch(creatorMarket, [0, 1], defaultAsk)
       ).fulfilled;
     });
 
     it("should set the asks for multiple token in native currency", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
-        setAskForBatch(creatorMarket, [0, 1], objKeyHexBytes, {
+        setAskForBatch(creatorMarket, [0, 1], {
           ...defaultAsk,
           currency: AddressZero,
         })
       ).fulfilled;
-    });
-
-    it("should reject if objKeyHexBytes does not match", async () => {
-      const creatorMarket = market.connect(creatorWallet);
-      await expect(
-        setAskForBatch(creatorMarket, [0, 1], otherObjKeyHexBytes, defaultAsk)
-      ).rejectedWith("Market: setAskForBatch only specified objKeyHex");
     });
 
     it("should reject if called with tokenId that is not owned by the caller", async () => {
@@ -642,7 +641,6 @@ describe("MarketIntegration", () => {
         setAskForBatch(
           creatorMarket,
           [2],
-          justAnotherObjKeyHexBytes,
           defaultAsk
         )
       ).rejectedWith("setAskForBatch Only approved or owner");
@@ -654,7 +652,7 @@ describe("MarketIntegration", () => {
 
       const timestamp = new Date().getTime();
 
-      const max = 100;
+      const max = maxEditionOf;
 
       const oKey = nanoidCustom16();
       const oKeyHex = ethers.utils.formatBytes32String(oKey);
@@ -719,7 +717,7 @@ describe("MarketIntegration", () => {
         amount: TWO_ETH,
       };
 
-      await expect(setAskForBatch(creatorMarket, ids, oKeyHexBytes, ask))
+      await expect(setAskForBatch(creatorMarket, ids, ask))
         .fulfilled;
     });
   });
@@ -888,7 +886,7 @@ describe("MarketIntegration", () => {
     it("should remove the asks for one token", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
-        setAskForBatch(creatorMarket, [0], objKeyHexBytes, defaultAsk)
+        setAskForBatch(creatorMarket, [0], defaultAsk)
       ).fulfilled;
       await expect(removeAskForBatch(creatorMarket, [0])).fulfilled;
     });
@@ -896,7 +894,7 @@ describe("MarketIntegration", () => {
     it("should remove the asks for multiple token", async () => {
       const creatorMarket = market.connect(creatorWallet);
       await expect(
-        setAskForBatch(creatorMarket, [0, 1], objKeyHexBytes, defaultAsk)
+        setAskForBatch(creatorMarket, [0, 1], defaultAsk)
       ).fulfilled;
       await expect(removeAskForBatch(creatorMarket, [0, 1])).fulfilled;
     });
@@ -906,7 +904,7 @@ describe("MarketIntegration", () => {
       const tokenPrev = market.connect(prevOwnerWallet);
 
       await expect(
-        setAskForBatch(tokenPrev, [2], justAnotherObjKeyHexBytes, defaultAsk)
+        setAskForBatch(tokenPrev, [2], defaultAsk)
       ).fulfilled;
 
       await expect(removeAskForBatch(creatorMarket, [2])).rejectedWith(
@@ -920,7 +918,7 @@ describe("MarketIntegration", () => {
 
       const timestamp = new Date().getTime();
 
-      const max = 100;
+      const max = maxEditionOf;
 
       const oKey = nanoidCustom16();
       const oKeyHex = ethers.utils.formatBytes32String(oKey);

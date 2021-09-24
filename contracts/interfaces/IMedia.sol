@@ -138,7 +138,7 @@ interface IMedia {
     /**
      * @notice Allow to conigure the tokens market contract
      */
-    function configure(address marketContractAddress) external;
+    function configure(address marketContractAddress, uint256 maxArObjectEditionOf) external;
 
     function creatorBalanceOf(address creator) external view returns (uint256);
 
