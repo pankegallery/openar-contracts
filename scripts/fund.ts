@@ -30,7 +30,7 @@ async function main() {
   const tx = {
     from: wallet.address,
     to: `${args.toAddress}`,
-    value: ethers.utils.parseEther("1"),
+    value: ethers.utils.parseEther("1000"),
     nonce: await provider.getTransactionCount(wallet.address, "latest"),
     gasLimit: ethers.utils.hexlify("0x100000"), // 100000
     gasPrice: await provider.getGasPrice(), // gasPrice,

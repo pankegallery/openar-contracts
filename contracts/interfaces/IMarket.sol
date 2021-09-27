@@ -126,6 +126,11 @@ interface IMarket {
     /**
      * @notice Set the ask for a batch of NFTs of one arObject
      */
+    function buyFirstAvailable(uint256[] calldata tokenIds, Bid calldata bid, address seller) external payable;
+
+    /**
+     * @notice Set the ask for a batch of NFTs of one arObject
+     */
     function setAskForBatch(uint256[] calldata tokenIds, Ask calldata ask) external;
 
     /**
@@ -155,5 +160,4 @@ interface IMarket {
 
     function acceptBid(uint256 tokenId, Bid calldata bid) external;
 
-    
 }

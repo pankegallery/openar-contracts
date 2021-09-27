@@ -45,6 +45,10 @@ let justAnotherContentHex: string;
 let justAnotherContentHash: string;
 let justAnotherContentHashBytes: Bytes;
 
+let yetAnotherContentHex: string;
+let yetAnotherContentHash: string;
+let yetAnotherContentHashBytes: Bytes;
+
 let zeroContentHashBytes: Bytes;
 
 let metadataHex: string;
@@ -79,6 +83,14 @@ const justAnotherAwKeyHexBytes = ethers.utils.arrayify(justAnotherAwKeyHex);
 const justAnotherAwKeyHash = sha256(justAnotherAwKeyHex);
 const justAnotherAwKeyHashBytes = ethers.utils.arrayify(justAnotherAwKeyHash);
 
+const yetAnotherArtworkKey = "9QEHYy4i9978lGXP";
+const yetAnotherAwKeyHex = ethers.utils.formatBytes32String(
+  yetAnotherArtworkKey
+);
+const yetAnotherAwKeyHexBytes = ethers.utils.arrayify(yetAnotherAwKeyHex);
+const yetAnotherAwKeyHash = sha256(yetAnotherAwKeyHex);
+const yetAnotherAwKeyHashBytes = ethers.utils.arrayify(yetAnotherAwKeyHash);
+
 const arObjectKey = "8QEHYy4i8078lGXJ";
 const objKeyHex = ethers.utils.formatBytes32String(arObjectKey);
 const objKeyHexBytes = ethers.utils.arrayify(objKeyHex);
@@ -98,6 +110,18 @@ const justAnotherObjKeyHex = ethers.utils.formatBytes32String(
 const justAnotherObjKeyHexBytes = ethers.utils.arrayify(justAnotherObjKeyHex);
 const justAnotherObjKeyHash = sha256(justAnotherObjKeyHex);
 const justAnotherObjKeyHashBytes = ethers.utils.arrayify(justAnotherObjKeyHash);
+
+const yetAnotherArObjectKey = "9QEHYy78u078lwerA";
+const yetAnotherObjKeyHex = ethers.utils.formatBytes32String(
+  yetAnotherArObjectKey
+);
+const yetAnotherObjKeyHexBytes = ethers.utils.arrayify(yetAnotherObjKeyHex);
+const yetAnotherObjKeyHash = sha256(yetAnotherObjKeyHex);
+const yetAnotherObjKeyHashBytes = ethers.utils.arrayify(yetAnotherObjKeyHash);
+
+let yetAnotherMetadataHex: string;
+let yetAnotherMetadataHash: string;
+let yetAnotherMetadataHashBytes: Bytes;
 
 const defaultTokenId = 1;
 
@@ -129,6 +153,14 @@ justAnotherMetadataHashBytes = ethers.utils.arrayify(justAnotherMetadataHash);
 justAnotherContentHex = ethers.utils.formatBytes32String("justanotherthing");
 justAnotherContentHash = sha256(justAnotherContentHex);
 justAnotherContentHashBytes = ethers.utils.arrayify(justAnotherContentHash);
+
+yetAnotherMetadataHex = ethers.utils.formatBytes32String('{meta:"yetAnother"}');
+yetAnotherMetadataHash = sha256(yetAnotherMetadataHex);
+yetAnotherMetadataHashBytes = ethers.utils.arrayify(yetAnotherMetadataHash);
+
+yetAnotherContentHex = ethers.utils.formatBytes32String("yetAnotherthing");
+yetAnotherContentHash = sha256(yetAnotherContentHex);
+yetAnotherContentHashBytes = ethers.utils.arrayify(yetAnotherContentHash);
 
 zeroContentHashBytes = ethers.utils.arrayify(ethers.constants.HashZero);
 
@@ -226,11 +258,7 @@ describe("MarketIntegration", () => {
     return market.removeAsk(tokenId);
   }
 
-  async function setAskForBatch(
-    market: Market,
-    tokenIds: number[],
-    ask: Ask
-  ) {
+  async function setAskForBatch(market: Market, tokenIds: number[], ask: Ask) {
     return market.setAskForBatch(tokenIds, ask);
   }
 
@@ -249,6 +277,25 @@ describe("MarketIntegration", () => {
     value: BigNumber
   ) {
     return market.setBid(tokenId, bid, { value });
+  }
+
+  async function buyFirstAvailable(
+    market: Market,
+    tokenIds: number[],
+    seller: string,
+    bid: Bid
+  ) {
+    return market.buyFirstAvailable(tokenIds, bid, seller);
+  }
+
+  async function buyFirstAvailableNative(
+    market: Market,
+    tokenIds: number[],
+    seller: string,
+    bid: Bid,
+    value: BigNumber
+  ) {
+    return market.buyFirstAvailable(tokenIds, bid, seller, { value });
   }
 
   async function removeBid(market: Market, tokenId: number) {
@@ -614,16 +661,12 @@ describe("MarketIntegration", () => {
 
     it("should set the asks for one token", async () => {
       const creatorMarket = market.connect(creatorWallet);
-      await expect(
-        setAskForBatch(creatorMarket, [0], defaultAsk)
-      ).fulfilled;
+      await expect(setAskForBatch(creatorMarket, [0], defaultAsk)).fulfilled;
     });
 
     it("should set the asks for multiple token", async () => {
       const creatorMarket = market.connect(creatorWallet);
-      await expect(
-        setAskForBatch(creatorMarket, [0, 1], defaultAsk)
-      ).fulfilled;
+      await expect(setAskForBatch(creatorMarket, [0, 1], defaultAsk)).fulfilled;
     });
 
     it("should set the asks for multiple token in native currency", async () => {
@@ -638,13 +681,9 @@ describe("MarketIntegration", () => {
 
     it("should reject if called with tokenId that is not owned by the caller", async () => {
       const creatorMarket = market.connect(creatorWallet);
-      await expect(
-        setAskForBatch(
-          creatorMarket,
-          [2],
-          defaultAsk
-        )
-      ).rejectedWith("setAskForBatch Only approved or owner");
+      await expect(setAskForBatch(creatorMarket, [2], defaultAsk)).rejectedWith(
+        "setAskForBatch Only approved or owner"
+      );
     });
 
     it("should batch mint 100 tokens and set a new ask for the batch", async () => {
@@ -718,8 +757,7 @@ describe("MarketIntegration", () => {
         amount: TWO_ETH,
       };
 
-      await expect(setAskForBatch(creatorMarket, ids, ask))
-        .fulfilled;
+      await expect(setAskForBatch(creatorMarket, ids, ask)).fulfilled;
     });
   });
 
@@ -886,17 +924,13 @@ describe("MarketIntegration", () => {
 
     it("should remove the asks for one token", async () => {
       const creatorMarket = market.connect(creatorWallet);
-      await expect(
-        setAskForBatch(creatorMarket, [0], defaultAsk)
-      ).fulfilled;
+      await expect(setAskForBatch(creatorMarket, [0], defaultAsk)).fulfilled;
       await expect(removeAskForBatch(creatorMarket, [0])).fulfilled;
     });
 
     it("should remove the asks for multiple token", async () => {
       const creatorMarket = market.connect(creatorWallet);
-      await expect(
-        setAskForBatch(creatorMarket, [0, 1], defaultAsk)
-      ).fulfilled;
+      await expect(setAskForBatch(creatorMarket, [0, 1], defaultAsk)).fulfilled;
       await expect(removeAskForBatch(creatorMarket, [0, 1])).fulfilled;
     });
 
@@ -904,9 +938,7 @@ describe("MarketIntegration", () => {
       const creatorMarket = market.connect(creatorWallet);
       const tokenPrev = market.connect(prevOwnerWallet);
 
-      await expect(
-        setAskForBatch(tokenPrev, [2], defaultAsk)
-      ).fulfilled;
+      await expect(setAskForBatch(tokenPrev, [2], defaultAsk)).fulfilled;
 
       await expect(removeAskForBatch(creatorMarket, [2])).rejectedWith(
         "removeAskForBatch Only approved or owner"
@@ -1501,6 +1533,271 @@ describe("MarketIntegration", () => {
       expect(bidShares.prevOwner.value.toString()).eq(
         Decimal.new(10).value.toString()
       );
+    });
+  });
+
+  describe("#buyFirstAvailable", () => {
+    beforeEach(async () => {
+      await deploy();
+
+      const mediaCreator = media.connect(creatorWallet);
+      const marketCreator = market.connect(creatorWallet);
+
+      const mediaOther = media.connect(otherWallet);
+      const marketOther = market.connect(otherWallet);
+
+      await mintCurrency(creatorWallet.address, TWO_ETH.mul(10000));
+      await mintCurrency(ownerWallet.address, TWO_ETH.mul(10000));
+      await mintCurrency(bidderWallet.address, TWO_ETH.mul(10000));
+      await approveCurrency(market.address, creatorWallet);
+      await approveCurrency(market.address, ownerWallet);
+      await approveCurrency(market.address, bidderWallet);
+
+      await mint(
+        mediaCreator,
+        awKeyHexBytes,
+        objKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        contentHashBytes,
+        metadataHashBytes,
+        defaultBidSharesMint
+      );
+      await setAsk(marketCreator, 0, defaultAsk);
+
+      await mint(
+        mediaCreator,
+        otherAwKeyHexBytes,
+        otherObjKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        otherContentHashBytes,
+        otherMetadataHashBytes,
+        defaultBidSharesMint
+      );
+      await setAsk(marketCreator, 1, defaultAsk);
+
+      await mint(
+        mediaOther,
+        justAnotherAwKeyHexBytes,
+        justAnotherObjKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        justAnotherContentHashBytes,
+        justAnotherMetadataHashBytes,
+        defaultBidSharesMint
+      );
+      await setAsk(marketOther, 2, defaultAsk);
+
+      await mint(
+        mediaCreator,
+        yetAnotherAwKeyHexBytes,
+        yetAnotherObjKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        yetAnotherContentHashBytes,
+        yetAnotherMetadataHashBytes,
+        defaultBidSharesMint
+      );
+    });
+
+    it("should buyFirstAvailable given correct tokenids and sellers address ", async () => {
+      const bidderMarket = market.connect(bidderWallet);
+      const bidderMedia = media.connect(bidderWallet);
+      await expect(
+        buyFirstAvailable(
+          bidderMarket,
+          [0, 1],
+          creatorAddress,
+          defaultBid(currency.address, bidderWallet.address)
+        )
+      ).fulfilled;
+
+      expect(await bidderMedia.ownerOf(0)).eq(bidderAddress);
+    });
+
+    it("should buyFirstAvailable from correct seller, skip owned buy others ", async () => {
+      const bidderMarket = market.connect(bidderWallet);
+      const bidderMedia = media.connect(bidderWallet);
+      await expect(
+        buyFirstAvailable(
+          bidderMarket,
+          [0, 1, 2],
+          otherAddress,
+          defaultBid(currency.address, bidderWallet.address)
+        )
+      ).fulfilled;
+
+      expect(await bidderMedia.ownerOf(2)).eq(bidderAddress);
+    });
+
+    it("should reject if wrong token ids or sellers address has been configured ", async () => {
+      const bidderMarket = market.connect(bidderWallet);
+
+      // non existing token ids
+      await expect(
+        buyFirstAvailable(
+          bidderMarket,
+          [10, 11, 12],
+          creatorAddress,
+          defaultBid(currency.address, bidderWallet.address)
+        )
+      ).rejectedWith("ERC721: owner query for nonexistent token");
+
+      // wrong seller
+      await expect(
+        buyFirstAvailable(
+          bidderMarket,
+          [0, 1, 2],
+          bidderAddress,
+          defaultBid(currency.address, bidderWallet.address)
+        )
+      ).rejectedWith("Market: object purchase failed");
+
+      // token without ask
+      await expect(
+        buyFirstAvailable(
+          bidderMarket,
+          [3],
+          creatorAddress,
+          defaultBid(currency.address, bidderWallet.address)
+        )
+      ).rejectedWith("Market: object purchase failed");
+    });
+  });
+
+  describe("#buyFirstAvailable Native", () => {
+    beforeEach(async () => {
+      await deploy();
+
+      const mediaCreator = media.connect(creatorWallet);
+      const marketCreator = market.connect(creatorWallet);
+
+      const mediaOther = media.connect(otherWallet);
+      const marketOther = market.connect(otherWallet);
+
+      await mint(
+        mediaCreator,
+        awKeyHexBytes,
+        objKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        contentHashBytes,
+        metadataHashBytes,
+        defaultBidSharesMint
+      );
+
+      await setAsk(marketCreator, 0, { ...defaultAsk, currency: AddressZero });
+
+      await mint(
+        mediaCreator,
+        otherAwKeyHexBytes,
+        otherObjKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        otherContentHashBytes,
+        otherMetadataHashBytes,
+        defaultBidSharesMint
+      );
+      await setAsk(marketCreator, 1, { ...defaultAsk, currency: AddressZero });
+
+      await mint(
+        mediaOther,
+        justAnotherAwKeyHexBytes,
+        justAnotherObjKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        justAnotherContentHashBytes,
+        justAnotherMetadataHashBytes,
+        defaultBidSharesMint
+      );
+      await setAsk(marketOther, 2, { ...defaultAsk, currency: AddressZero });
+
+      await mint(
+        mediaCreator,
+        yetAnotherAwKeyHexBytes,
+        yetAnotherObjKeyHexBytes,
+        metadataURI,
+        tokenURI,
+        yetAnotherContentHashBytes,
+        yetAnotherMetadataHashBytes,
+        defaultBidSharesMint
+      );
+    });
+
+    it("should buyFirstAvailable given correct tokenids and sellers address ", async () => {
+      const bidderMarket = market.connect(bidderWallet);
+      const bidderMedia = media.connect(bidderWallet);
+
+      let nativeBid = defaultNativeBid(bidderWallet.address);
+      await expect(
+        buyFirstAvailableNative(
+          bidderMarket,
+          [0, 1],
+          creatorAddress,
+          nativeBid,
+          nativeBid.amount
+        )
+      ).fulfilled;
+
+      expect(await bidderMedia.ownerOf(0)).eq(bidderAddress);
+    });
+
+    it("should buyFirstAvailable from correct seller, skip owned buy others ", async () => {
+      const bidderMarket = market.connect(bidderWallet);
+      const bidderMedia = media.connect(bidderWallet);
+
+      let nativeBid = defaultNativeBid(bidderWallet.address);
+      await expect(
+        buyFirstAvailableNative(
+          bidderMarket,
+          [0, 1, 2],
+          otherAddress,
+          nativeBid,
+          nativeBid.amount
+        )
+      ).fulfilled;
+
+      expect(await bidderMedia.ownerOf(2)).eq(bidderAddress);
+    });
+
+    it("should reject if wrong token ids or sellers address has been configured ", async () => {
+      const bidderMarket = market.connect(bidderWallet);
+
+      let nativeBid = defaultNativeBid(bidderWallet.address);
+
+      // non existing token ids
+      await expect(
+        buyFirstAvailableNative(
+          bidderMarket,
+          [10, 11, 12],
+          creatorAddress,
+          nativeBid,
+          nativeBid.amount
+        )
+      ).rejectedWith("ERC721: owner query for nonexistent token");
+
+      // wrong seller
+      await expect(
+        buyFirstAvailableNative(
+          bidderMarket,
+          [0, 1, 2],
+          bidderAddress,
+          nativeBid,
+          nativeBid.amount
+        )
+      ).rejectedWith("Market: object purchase failed");
+
+      // token without ask
+      await expect(
+        buyFirstAvailableNative(
+          bidderMarket,
+          [3],
+          creatorAddress,
+          nativeBid,
+          nativeBid.amount
+        )
+      ).rejectedWith("Market: object purchase failed");
     });
   });
 

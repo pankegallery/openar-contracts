@@ -417,6 +417,47 @@ contract Market is IMarket, Context, ReentrancyGuard, Ownable {
     }
 
     /**
+     * @notice Sets the bid on a particular media for a bidder. The token being used to bid
+     * is transferred from the spender to this contract to be held until removed or accepted.
+     * If another bid already exists for the bidder, it is refunded.
+     */
+    function buyFirstAvailable(uint256[] memory tokenIds, Bid memory bid, address seller)
+        public
+        payable
+        override
+        whenNotPaused
+    {
+        require(
+            bid.bidder == _msgSender(),
+            "Market: bidder needs to be message sender"
+        );
+        require(bid.bidder != address(0), "Market: bidder cannot be 0 address");
+        require(bid.amount != 0, "Market: cannot bid amount of 0");
+        
+        require(
+            bid.recipient != address(0),
+            "Market: bid recipient cannot be 0 address"
+        );
+
+        bool sold = false;
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            
+            if (IERC721(mediaContract).ownerOf(tokenIds[i]) == seller) {
+                if (
+                    _tokenAsks[tokenIds[i]].amount > 0 && 
+                    bid.currency == _tokenAsks[tokenIds[i]].currency &&
+                    bid.amount >= _tokenAsks[tokenIds[i]].amount
+                ) {
+                    setBid(tokenIds[i], bid);
+                    sold = true;
+                    break;
+                }
+            }
+        }
+        require(sold, "Market: object purchase failed");
+    }
+
+    /**
      * @notice Removes the bid on a particular media for the message sender. The bid amount
      * is transferred from this contract to the bidder, if they had a bid placed.
      */
