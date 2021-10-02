@@ -30,7 +30,9 @@ let platformCuts: PlatformCuts = {
 };
 
 async function main() {
-  const args = require("minimist")(process.argv.slice(2));
+  const args = require("minimist")(process.argv.slice(2), {
+    string: ['wxdai'],
+  });
 
   if (!args.chainId) {
     throw new Error("--chainId chain ID is required");
@@ -46,11 +48,13 @@ async function main() {
     process.env.RPC_ENDPOINT
   );
 
-  const wallet = new ethers.Wallet(
-    `0x${process.env.PRIVATE_KEY_CONTRACT}`,
+  const wallet: Wallet = new ethers.Wallet(
+    `0x${process.env.PRIVATE_KEY_CONTRACT.replace("0x","")}`,
     provider
   );
   const addressPath = `${process.cwd()}/addresses/${args.chainId}.json`;
+
+  console.log(`Current Wallet balance: ${ethers.utils.formatEther(await wallet.getBalance())} xDai`);
 
   // @ts-ignore
   const addressBook = JSON.parse(await fs.readFileSync(addressPath));
@@ -87,15 +91,18 @@ async function main() {
         "--wxdai address to deployed native coin wrapper contract is required"
       );
     }
-
+    console.log("Adding wxdai from argument to address book");
     addressBook.wxdai = args.wxdai;
   }
 
+  console.log("Create Market contract ...")
   // We get the contract to deploy
   const Market = (await ethers.getContractFactory("Market", wallet)) as Market;
 
+  console.log(`Trigger deploy with wXDAI(${addressBook.wxdai}) ...`);
+
   const market = await Market.deploy(addressBook.wxdai);
-  console.log(`Market deploying to ${tx.address}. Awaiting confirmation...`);
+  console.log(`Market deploying to ${await market.address}. Awaiting confirmation...`);
   await market.deployed();
   console.log(`Market deployed!`);
   addressBook.market = market.address;
@@ -104,11 +111,13 @@ async function main() {
   );
   console.log("Market deploy gas usage: ", txReceipt.gasUsed.toNumber());
 
+
+  console.log("Create Media contract ...")
   // We get the contract to deploy
   const Media = (await ethers.getContractFactory("Media", wallet)) as Media;
-
+  console.log(`Trigger deploy ...`);
   const media = await Media.deploy();
-  console.log(`Media deploying to ${tx.address}. Awaiting confirmation...`);
+  console.log(`Media deploying to ${await media.address}. Awaiting confirmation...`);
   await media.deployed();
   console.log(`Media deployed!`);
   addressBook.media = media.address;
@@ -127,14 +136,14 @@ async function main() {
   await tx.wait();
 
   tx = await market.configurePlatformAddress(
-    `0x${process.env.ETH_ADDRESS_PLATFORM}`
+    `0x${process.env.ETH_ADDRESS_PLATFORM.replace("0x","")}`
   );
   console.log(`Market configurePlatformAddress() tx: ${tx.hash}`);
   await tx.wait();
   txReceipt = await provider.getTransactionReceipt(tx.hash);
   console.log("Gas usage: ", txReceipt.gasUsed.toNumber());
 
-  tx = await market.configurePoolAddress(`0x${process.env.ETH_ADDRESS_POOL}`);
+  tx = await market.configurePoolAddress(`0x${process.env.ETH_ADDRESS_POOL.replace("0x","")}`);
   console.log(`Market configurePoolAddress() tx: ${tx.hash}`);
   await tx.wait();
   txReceipt = await provider.getTransactionReceipt(tx.hash);
@@ -162,7 +171,7 @@ async function main() {
   txReceipt = await provider.getTransactionReceipt(tx.hash);
   console.log("Gas usage: ", txReceipt.gasUsed.toNumber());
 
-  tx = await media.configureMintAddress(`0x${process.env.ETH_ADDRESS_MINT}`);
+  tx = await media.configureMintAddress(`0x${process.env.ETH_ADDRESS_MINT.replace("0x","")}`);
   console.log(`Media configureMintAddress() tx: ${tx.hash}`);
   await tx.wait();
   txReceipt = await provider.getTransactionReceipt(tx.hash);
